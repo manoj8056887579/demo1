@@ -1,0 +1,170 @@
+import { NextRequest, NextResponse } from "next/server";
+import connectDB from "@/config/models/connectDB";
+import Testimonial from "@/config/utils/admin/testimonial/testimonialSchema";
+import { writeFile } from "fs/promises";
+import path from "path";
+
+// GET - Fetch all testimonials
+export async function GET(request: NextRequest) {
+  try { 
+    await connectDB();
+
+    const { searchParams } = new URL(request.url);
+    const status = searchParams.get("status");
+    const rating = searchParams.get("rating");
+    const servicesType = searchParams.get("servicesType");
+
+    // Build query
+    const query: any = {};
+
+    if (status && status !== "all") {
+      query.status = status;
+    }
+
+    if (rating) {
+      query.rating = parseInt(rating);
+    }
+
+    if (servicesType && servicesType !== "all") {
+      query.servicesType = servicesType;
+    }
+
+    // Fetch all testimonials
+    const testimonials = await Testimonial.find(query).sort({ createdAt: -1 });
+
+    return NextResponse.json({
+      success: true,
+      data: testimonials,
+      message: "Testimonials fetched successfully",
+    });
+  } catch (error: unknown) {
+    console.error("Error fetching testimonials:", error);
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Failed to fetch testimonials",
+        error: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 }
+    );
+  }
+}
+
+// POST - Create new testimonial
+export async function POST(request: NextRequest) {
+  try {
+    await connectDB();
+
+    const contentType = request.headers.get("content-type");
+    let body: any;
+    let avatarPath = "";
+
+    // Handle multipart form data (with file upload)
+    if (contentType?.includes("multipart/form-data")) {
+      const formData = await request.formData();
+
+      // Extract form fields
+      body = {
+        name: formData.get("name") as string,
+        location: formData.get("location") as string,
+        content: formData.get("content") as string,
+        rating: formData.get("rating") as string,
+        servicesType: formData.get("servicesType") as string,
+        date: formData.get("date") as string,
+        status: formData.get("status") as string,
+      };
+
+      // Handle file upload
+      const file = formData.get("avatar") as File;
+      if (file && file.size > 0) {
+        const bytes = await file.arrayBuffer();
+        const buffer = Buffer.from(bytes);
+
+        // Generate unique filename
+        const timestamp = Date.now();
+        const fileExtension = path.extname(file.name);
+        const fileName = `testimonial-${timestamp}${fileExtension}`;
+        const filePath = path.join(
+          process.cwd(),
+          "public",
+          "testimonials",
+          fileName
+        );
+
+        // Save file to public/testimonials
+        await writeFile(filePath, buffer);
+        avatarPath = `/testimonials/${fileName}`;
+      }
+    } else {
+      // Handle JSON data
+      body = await request.json();
+      avatarPath = body.avatar || "";
+    }
+
+    // Validate required fields
+    const requiredFields = [
+      "name",
+      "location",
+      "content",
+      "rating",
+      "servicesType",
+    ];
+    for (const field of requiredFields) {
+      if (
+        !body[field] ||
+        (typeof body[field] === "string" && body[field].trim() === "")
+      ) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: `${field} is required and cannot be empty`,
+          },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Validate rating range
+    const rating = parseInt(body.rating);
+    if (rating < 1 || rating > 5) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Rating must be between 1 and 5",
+        },
+        { status: 400 }
+      );
+    }
+
+    // Create testimonial data
+    const testimonialData = {
+      name: body.name.trim(),
+      location: body.location.trim(),
+      avatar: avatarPath,
+      content: body.content.trim(),
+      rating: rating,
+      servicesType: body.servicesType.trim(),
+      date: body.date ? new Date(body.date) : new Date(),
+      status: body.status || "published",
+    };
+
+    const newTestimonial = new Testimonial(testimonialData);
+    const savedTestimonial = await newTestimonial.save();
+
+    return NextResponse.json({
+      success: true,
+      data: savedTestimonial,
+      message: "Testimonial created successfully",
+    });
+  } catch (error: unknown) {
+    console.error("Error creating testimonial:", error);
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Failed to create testimonial",
+        error: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 }
+    );
+  }
+}
