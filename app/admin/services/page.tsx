@@ -787,7 +787,7 @@ export default function ServicesPage() {
               Add New Service
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto" aria-describedby="{undefined}">
+          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto" aria-describedby={undefined}>
             <DialogHeader>
               <DialogTitle className="text-2xl bg-admin-gradient bg-clip-text text-transparent">
                 {editingId ? "Edit Service" : "Add New Service"}
