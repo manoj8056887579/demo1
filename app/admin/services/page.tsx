@@ -7,10 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import dynamic from "next/dynamic";
-
-// Dynamically import ReactQuill to avoid SSR issues
-const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
+import RichTextEditor from "@/components/ui/rich-text-editor";
 import {
   Select,
   SelectContent,
@@ -90,6 +87,8 @@ interface PaginationData {
   hasPrevPage: boolean;
 }
 
+// RichTextEditor component handles dynamic import of react-quill on the client
+
 export default function ServicesPage() {
   const { toast } = useToast();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -103,7 +102,9 @@ export default function ServicesPage() {
 
   // Quill configuration - only allow paragraph, bullet list, and numbered list
   const quillModules = {
-    toolbar: [[{ list: "ordered" }, { list: "bullet" }], ["clean"]],
+    toolbar: {
+      container: [[{ list: "ordered" }, { list: "bullet" }], ["clean"]],
+    },
   };
 
   const quillFormats = ["list", "bullet"];
@@ -891,28 +892,18 @@ export default function ServicesPage() {
                   >
                     Full Description <span className="text-red-500">*</span>
                   </Label>
-                  <div
-                    className={`mt-2 ${
-                      isFormSubmitted &&
-                      isQuillContentEmpty(formData.fullDescription)
-                        ? "quill-error"
-                        : ""
-                    }`}
-                  >
-                    <ReactQuill
-                      theme="snow"
-                      value={formData.fullDescription}
-                      onChange={(value) =>
-                        setFormData({
-                          ...formData,
-                          fullDescription: value,
-                        })
-                      }
-                      modules={quillModules}
-                      formats={quillFormats}
-                      placeholder="Detailed description for service detail page. Use the toolbar to add bullet points and numbered lists."
-                    />
-                  </div>
+                  <div className={`mt-2 ${isFormSubmitted && isQuillContentEmpty(formData.fullDescription) ? "quill-error" : ""}`}>
+  <RichTextEditor
+    value={formData.fullDescription}
+    onChange={(content: string) => setFormData({
+      ...formData,
+      fullDescription: content,
+    })}
+    modules={quillModules}
+    formats={quillFormats}
+    placeholder="Detailed description for service detail page. Use the toolbar to add bullet points and numbered lists."
+  />
+</div>
                   {isFormSubmitted &&
                     isQuillContentEmpty(formData.fullDescription) && (
                       <p className="text-sm text-red-500 mt-1">
