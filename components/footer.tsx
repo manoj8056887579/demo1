@@ -440,9 +440,9 @@ export default function Footer() {
 
         <div className="border-t border-gray-800 mt-6 sm:mt-8 pt-6 sm:pt-8 text-center">
           <p className="text-gray-400 text-xs sm:text-sm leading-relaxed px-2">
-            © 2024 Filigree Solutions. All rights reserved.
-            <span className="block sm:inline sm:ml-1">
-              | Developed by MnT Magizh NexGen Technologies
+            © 2025 Filigree Solutions. All rights reserved. ❤️ 
+            <span className="block sm:inline sm:ml-1 hover:text-white transition-colors">
+              <a href="https://mntfuture.com/" target="_blank" rel="noopener noreferrer " > Developed by  MnT </a>
             </span>
           </p>
         </div>

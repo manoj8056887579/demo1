@@ -15,6 +15,8 @@ import {
   Download,
   FileText,
   Loader2,
+  Send,
+  CheckCircle,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuotation } from "@/components/quotation-provider";
@@ -60,6 +62,7 @@ function NavbarContent() {
   const [brochures, setBrochures] = useState<Brochure[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState("");
+  const [isEmailSent, setIsEmailSent] = useState(false);
   const [formData, setFormData] = useState<DownloadFormData>({
     fullName: "",
     email: "",
@@ -139,6 +142,9 @@ function NavbarContent() {
   const handleDownloadBrochure = () => {
     setIsDownloadModalOpen(true);
     setIsOpen(false);
+    // Reset form state when opening modal
+    setIsEmailSent(false);
+    setSubmitMessage("");
   };
 
   const handleFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -165,14 +171,14 @@ function NavbarContent() {
 
     // Check if brochures are available
     if (brochures.length === 0) {
-      setSubmitMessage("No brochures available for download at the moment.");
+      setSubmitMessage("No brochures available at the moment.");
       setIsSubmitting(false);
       return;
     }
 
     try {
-      // Send lead data to API
-      const response = await fetch("/api/admin/lead", {
+      // First, save lead data to API
+      const leadResponse = await fetch("/api/admin/lead", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -181,69 +187,59 @@ function NavbarContent() {
           fullName: formData.fullName,
           email: formData.email,
           phone: formData.phone,
-          service: "Brochure Download",
-          message: "User requested brochure download",
+          service: "Brochure Request",
+          message: "User requested brochure download via email",
           formSource: "brochure",
         }),
       });
 
-      const result = await response.json();
+      const leadResult = await leadResponse.json();
 
-      if (result.success) {
+      if (!leadResult.success) {
+        throw new Error(leadResult.message || "Failed to save lead information");
+      }
+
+      // Then, send email with brochures
+      const emailResponse = await fetch("/api/admin/broucher/send-email", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          fullName: formData.fullName,
+        }),
+      });
+
+      const emailResult = await emailResponse.json();
+
+      if (emailResult.success) {
+        setIsEmailSent(true);
         setSubmitMessage(
-          `Success! ${brochures.length} brochure${
-            brochures.length > 1 ? "s" : ""
-          } will start downloading shortly.`
+          `🎉 Success! Your brochures have been sent to ${formData.email}. ${
+            emailResult.attachedCount > 0 
+              ? `${emailResult.attachedCount} file${emailResult.attachedCount !== 1 ? 's' : ''} attached directly.` 
+              : 'Download links included in the email.'
+          }`
         );
 
-        // Download all brochures
-        const downloadBrochures = async () => {
-          let downloadedCount = 0;
+        // Auto-close modal after success
+        setTimeout(() => {
+          setIsDownloadModalOpen(false);
+          setFormData({ fullName: "", email: "", phone: "" });
+          setSubmitMessage("");
+          setIsEmailSent(false);
+        }, 4000);
 
-          for (const brochure of brochures) {
-            const link = document.createElement("a");
-            link.href = brochure.filePath;
-            link.download = brochure.fileName;
-            link.style.display = "none";
-            document.body.appendChild(link);
-
-            // Use click() and a small timeout to trigger downloads
-            await new Promise<void>((resolve) => {
-              link.click();
-              downloadedCount++;
-              setSubmitMessage(
-                `Downloading brochure ${downloadedCount} of ${brochures.length}...`
-              );
-
-              // Remove link after click
-              setTimeout(() => {
-                document.body.removeChild(link);
-                resolve();
-              }, 1500);
-            });
-
-            // Add delay between downloads
-            if (downloadedCount < brochures.length) {
-              await new Promise((resolve) => setTimeout(resolve, 1000));
-            }
-          }
-          setSubmitMessage("All brochures downloaded successfully!");
-        };
-
-        // Start downloads and close modal after completion
-        downloadBrochures().then(() => {
-          // Close modal after all downloads
-          setTimeout(() => {
-            setIsDownloadModalOpen(false);
-            setFormData({ fullName: "", email: "", phone: "" });
-            setSubmitMessage("");
-          }, 2000);
-        });
       } else {
-        setSubmitMessage("Error: " + result.message);
+        throw new Error(emailResult.error || "Failed to send email");
       }
+
     } catch (error) {
-      setSubmitMessage("Error: Failed to process request. Please try again.");
+      console.error("Form submission error:", error);
+      setSubmitMessage(
+        `❌ Error: ${error instanceof Error ? error.message : "Failed to process request. Please try again."}`
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -445,8 +441,8 @@ function NavbarContent() {
                 variant="outline"
                 className="border-admin-primary text-admin-primary hover:bg-admin-gradient hover:text-white px-4 xl:px-6 py-2 font-semibold text-sm xl:text-base transition-all duration-300 hover:shadow-lg hover:scale-105"
               >
-                <Download className="h-4 w-4 mr-2" />
-                Brochure
+                <Mail className="h-4 w-4 mr-2" />
+                Get Brochure
               </Button>
             </div>
 
@@ -510,7 +506,7 @@ function NavbarContent() {
                   </Button>
                 </motion.div>
 
-                {/* Mobile Download Brochure Button */}
+                {/* Mobile Get Brochure Button */}
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -522,8 +518,8 @@ function NavbarContent() {
                     variant="outline"
                     className="w-full border-admin-primary text-admin-primary hover:bg-admin-gradient hover:text-white py-2.5 sm:py-3 font-semibold text-sm sm:text-base transition-all duration-300 hover:shadow-lg mb-3"
                   >
-                    <Download className="h-4 w-4 mr-2" />
-                    Brochure
+                    <Mail className="h-4 w-4 mr-2" />
+                    Get Brochure
                   </Button>
                 </motion.div>
               </div>
@@ -532,7 +528,7 @@ function NavbarContent() {
         </AnimatePresence>
       </nav>
 
-      {/* Download Brochure Modal */}
+      {/* Get Brochure Modal */}
       <AnimatePresence>
         {isDownloadModalOpen && (
           <motion.div
@@ -545,6 +541,7 @@ function NavbarContent() {
                 setIsDownloadModalOpen(false);
                 setFormData({ fullName: "", email: "", phone: "" });
                 setSubmitMessage("");
+                setIsEmailSent(false);
               }
             }}
           >
@@ -560,7 +557,7 @@ function NavbarContent() {
                   <div className="flex items-center space-x-3">
                     <FileText className="h-6 w-6 text-white" />
                     <h3 className="text-xl font-bold text-white">
-                      Download Brochure
+                      Get Our Brochures
                     </h3>
                   </div>
                   <button
@@ -568,6 +565,7 @@ function NavbarContent() {
                       setIsDownloadModalOpen(false);
                       setFormData({ fullName: "", email: "", phone: "" });
                       setSubmitMessage("");
+                      setIsEmailSent(false);
                     }}
                     className="p-1 rounded-lg hover:bg-white/20 transition-colors"
                   >
@@ -575,117 +573,152 @@ function NavbarContent() {
                   </button>
                 </div>
                 <p className="text-white/80 text-sm mt-2">
-                  Please provide your details to download our brochures
+                  {isEmailSent
+                    ? "✅ Brochures sent successfully!"
+                    : `Enter your details to receive ${brochures.length} brochure${brochures.length !== 1 ? 's' : ''} via email`
+                  }
                 </p>
               </div>
 
               {/* Modal Body */}
               <div className="px-6 py-6">
-                <form onSubmit={handleFormSubmit} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Full Name *
-                    </label>
-                    <input
-                      type="text"
-                      name="fullName"
-                      value={formData.fullName}
-                      onChange={handleFormChange}
-                      required
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-admin-primary focus:border-transparent transition-all duration-200"
-                      placeholder="Enter your full name"
-                      disabled={isSubmitting}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Email Address *
-                    </label>
-                    <input
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleFormChange}
-                      required
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-admin-primary focus:border-transparent transition-all duration-200"
-                      placeholder="Enter your email address"
-                      disabled={isSubmitting}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Phone Number *
-                    </label>
-                    <input
-                      type="tel"
-                      name="phone"
-                      pattern="[0-9]*"
-                      inputMode="numeric"
-                      value={formData.phone}
-                      onChange={handleFormChange}
-                      required
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-admin-primary focus:border-transparent transition-all duration-200"
-                      placeholder="Enter your phone number"
-                      disabled={isSubmitting}
-                    />
-                  </div>
-
-                  {submitMessage && (
-                    <div
-                      className={`p-3 rounded-lg text-sm font-medium ${
-                        submitMessage.startsWith("Success")
-                          ? "bg-green-50 text-green-800 border border-green-200"
-                          : "bg-red-50 text-red-800 border border-red-200"
-                      }`}
-                    >
-                      {submitMessage}
+                {!isEmailSent ? (
+                  <form onSubmit={handleFormSubmit} className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Full Name *
+                      </label>
+                      <input
+                        type="text"
+                        name="fullName"
+                        value={formData.fullName}
+                        onChange={handleFormChange}
+                        required
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-admin-primary focus:border-transparent transition-all duration-200"
+                        placeholder="Enter your full name"
+                        disabled={isSubmitting}
+                      />
                     </div>
-                  )}
 
-                  {brochures.length === 0 && (
-                    <div className="p-3 rounded-lg text-sm font-medium bg-yellow-50 text-yellow-800 border border-yellow-200">
-                      No brochures available for download at the moment.
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Email Address *
+                      </label>
+                      <input
+                        type="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleFormChange}
+                        required
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-admin-primary focus:border-transparent transition-all duration-200"
+                        placeholder="Enter your email address"
+                        disabled={isSubmitting}
+                      />
                     </div>
-                  )}
 
-                  <div className="flex space-x-3 pt-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        setIsDownloadModalOpen(false);
-                        setFormData({ fullName: "", email: "", phone: "" });
-                        setSubmitMessage("");
-                      }}
-                      disabled={isSubmitting}
-                      className="flex-1"
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      type="submit"
-                      disabled={isSubmitting || brochures.length === 0}
-                      className="flex-1 bg-admin-gradient text-white hover:opacity-90 disabled:opacity-50"
-                    >
-                      {isSubmitting ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Processing...
-                        </>
-                      ) : (
-                        <>
-                          <Download className="h-4 w-4 mr-2" />
-                          Download{" "}
-                          {brochures.length > 0
-                            ? `(${brochures.length})`
-                            : "(0)"}
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </form>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Phone Number *
+                      </label>
+                      <input
+                        type="tel"
+                        name="phone"
+                        pattern="[0-9]*"
+                        inputMode="numeric"
+                        value={formData.phone}
+                        onChange={handleFormChange}
+                        required
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-admin-primary focus:border-transparent transition-all duration-200"
+                        placeholder="Enter your phone number"
+                        disabled={isSubmitting}
+                      />
+                    </div>
+
+                    {submitMessage && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className={`p-4 rounded-lg text-sm font-medium ${
+                          submitMessage.includes("Success") || submitMessage.includes("🎉")
+                            ? "bg-green-50 text-green-800 border border-green-200"
+                            : "bg-red-50 text-red-800 border border-red-200"
+                        }`}
+                      >
+                        {submitMessage}
+                      </motion.div>
+                    )}
+
+                    {brochures.length === 0 && (
+                      <div className="p-4 rounded-lg text-sm font-medium bg-yellow-50 text-yellow-800 border border-yellow-200">
+                        ⚠️ No brochures available at the moment.
+                      </div>
+                    )}
+
+                    <div className="bg-gray-50 rounded-lg p-3 text-xs text-gray-600">
+                      <p className="flex items-center gap-2">
+                        <FileText className="h-3 w-3" />
+                        <span>
+                          We'll send you {brochures.length} high-quality PDF brochure{brochures.length !== 1 ? 's' : ''} 
+                          {brochures.length > 0 && ' directly to your email inbox.'}
+                        </span>
+                      </p>
+                    </div>
+
+                    <div className="flex space-x-3 pt-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          setIsDownloadModalOpen(false);
+                          setFormData({ fullName: "", email: "", phone: "" });
+                          setSubmitMessage("");
+                          setIsEmailSent(false);
+                        }}
+                        disabled={isSubmitting}
+                        className="flex-1"
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        type="submit"
+                        disabled={isSubmitting || brochures.length === 0}
+                        className="flex-1 bg-admin-gradient text-white hover:opacity-90 disabled:opacity-50"
+                      >
+                        {isSubmitting ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Sending...
+                          </>
+                        ) : (
+                          <>
+                            <Send className="h-4 w-4 mr-2" />
+                            Send to Email
+                            {brochures.length > 0 && ` (${brochures.length})`}
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </form>
+                ) : (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="text-center py-8"
+                  >
+                    <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <CheckCircle className="h-8 w-8 text-green-500" />
+                    </div>
+                    <h4 className="text-lg font-bold text-gray-900 mb-2">
+                      Brochures Sent Successfully!
+                    </h4>
+                    <p className="text-gray-600 mb-4">
+                      Check your email ({formData.email}) for our comprehensive brochures.
+                    </p>
+                    <div className="bg-gray-50 rounded-lg p-3 text-sm text-gray-600">
+                      📧 Email may take a few minutes to arrive. Don't forget to check your spam folder!
+                    </div>
+                  </motion.div>
+                )}
               </div>
             </motion.div>
           </motion.div>
