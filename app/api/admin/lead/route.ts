@@ -8,7 +8,7 @@ import { createSMTPTransporter } from "@/config/models/connectSMTP";
 export async function POST(request: NextRequest) {
   try {
     await connectDB();
-
+ 
     const body = await request.json();
     const {
       fullName,

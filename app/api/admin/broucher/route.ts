@@ -4,7 +4,7 @@ import Broucher from "@/config/utils/admin/broucher/broucherSchema";
 import { uploadToCloudinary, deleteFromCloudinary } from "@/config/utils/cloudinary";
 
 // GET all brochures
-export async function GET() { 
+ export async function GET() { 
   try {
     await connectDB();
     const brochures = await Broucher.find().sort({ uploadDate: -1 });
@@ -107,7 +107,7 @@ export async function DELETE(req: Request) {
 export async function PUT(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const id = searchParams.get("id");
+    const id = searchParams.get("id"); 
 
     if (!id) {
       return NextResponse.json({ error: "Brochure ID is required" }, { status: 400 });
@@ -116,7 +116,7 @@ export async function PUT(req: Request) {
     await connectDB();
     const data = await req.formData();
     const file = data.get("file") as File | null;
-
+ 
     const broucher = await Broucher.findById(id);
     if (!broucher) {
       return NextResponse.json({ error: "Brochure not found" }, { status: 404 });
