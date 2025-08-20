@@ -77,6 +77,13 @@ export const Portfolio = ({ portfolioItems = [], categories = [] }: PortfolioPro
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 6 // Show 6 items per page
 
+  useEffect(() => {
+    console.log("Portfolio Component Mount:", { 
+      categoriesCount: categories.length,
+      categories: categories
+    });
+  }, [categories]);
+
   // Set initial category from URL parameter
   useEffect(() => {
     if (categoryFromUrl) {
@@ -89,16 +96,26 @@ export const Portfolio = ({ portfolioItems = [], categories = [] }: PortfolioPro
   }, [selectedCategory, searchTerm])
 
   // Create categories array with only dynamic categories from the API
+  console.log("Categories from API:", categories); // Debug log
   const allCategories = ["All", ...categories.map((cat) => cat.name)]
+  console.log("All categories array:", allCategories); // Debug log
 
   const filteredProjects = portfolioItems.filter((project) => {
     const matchesCategory = selectedCategory === "All" || project.category === selectedCategory
     const matchesSearch =
       project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       project.shortDescription.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      project.tags.some((tag) => tag.toLowerCase().includes(searchTerm.toLowerCase()))
+      (project.tags && project.tags.some((tag) => tag.toLowerCase().includes(searchTerm.toLowerCase())))
     return matchesCategory && matchesSearch
   })
+  
+  useEffect(() => {
+    console.log("Filtered Projects:", {
+      total: portfolioItems.length,
+      filtered: filteredProjects.length,
+      category: selectedCategory
+    });
+  }, [filteredProjects.length, portfolioItems.length, selectedCategory]);
 
   const totalPages = Math.ceil(filteredProjects.length / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
@@ -199,7 +216,8 @@ export const Portfolio = ({ portfolioItems = [], categories = [] }: PortfolioPro
             <div className="relative">
               <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent pb-2">
                 <div className="flex gap-2 justify-center min-w-max px-4">
-                    {allCategories.map((category) => (
+                    {Array.isArray(allCategories) && allCategories.length > 0 ? (
+                      allCategories.map((category) => (
                       <Button
                         key={category}
                         variant={selectedCategory === category ? "default" : "outline"}
@@ -214,7 +232,11 @@ export const Portfolio = ({ portfolioItems = [], categories = [] }: PortfolioPro
                         {getCategoryIcon(category)}
                         <span>{category}</span>
                       </Button>
-                    ))}
+                    ))
+                    ) : (
+                      <div className="text-gray-500 text-sm">No categories available</div>
+                    )}
+
                   </div>
                   <style jsx global>{`
                     .no-scrollbar {

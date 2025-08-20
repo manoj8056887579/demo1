@@ -53,6 +53,12 @@ export const metadata = {
 export default async function PortfolioPage() {
   try {
     const initialData = await getPortfolioData();
+    
+    console.log("Portfolio Data:", {
+      itemsCount: initialData.portfolioItems.length,
+      categoriesCount: initialData.categories.length,
+      categories: initialData.categories
+    });
 
     return (
       <div className="min-h-screen">
