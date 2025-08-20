@@ -1,13 +1,14 @@
-import axios from "axios"
 import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import { DetailServices } from "@/components/services/DetailServices"
 import { notFound } from "next/navigation"
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 interface Props {
   params: { title: string }
-}
+} 
 
 // Dynamic SEO metadata will be handled by the SEO provider
 export const metadata = {
@@ -24,21 +25,28 @@ async function getServiceData(titleSlug: string) {
       : `${process.env.APP_URL}`;
 
   try {
-    const response = await axios.get(`${baseUrl}/api/admin/services/${titleSlug}`, {
+    const response = await fetch(`${baseUrl}/api/admin/services/${titleSlug}`, {
       headers: {
         "Content-Type": "application/json",
       },
+      cache: 'no-store'
     });
 
-    if (response.data.success) {
-      return { service: response.data.data };
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (data.success) {
+      return { service: data.data };
     } else {
       return { service: null };
     }
   } catch (error) {
     console.error("Error fetching service data:", error);
     throw new Error(
-      (error as any).response?.data?.error || "Failed to fetch services data"
+      error instanceof Error ? error.message : "Failed to fetch services data"
     );
   }
 }

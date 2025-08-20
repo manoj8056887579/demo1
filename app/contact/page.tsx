@@ -1,8 +1,10 @@
-import axios from "axios";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
 import { ContactPageSeo } from "@/components/Contact/ContactSeo";
 import { Contact } from "@/components/Contact/Contact";
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 // Dynamic SEO metadata will be handled by the SEO provider
 export const metadata = {
@@ -11,7 +13,7 @@ export const metadata = {
     "Get in touch with our engineering experts for CAD, CAE, structural analysis, and comprehensive engineering solutions. Contact us today for your project needs.",
   keywords:
     "contact engineering services, CAD consultation, structural analysis inquiry, engineering support, project consultation",
-};
+}; 
 
 async function getContactData() {
   // Construct the full URL for server-side requests
@@ -22,18 +24,21 @@ async function getContactData() {
 
   try {
     // Fetch services data
-   const servicesResponse = await axios.get(`${baseUrl}/api/admin/services`, {
-      params: {
-        all: 'true',       // Get all without pagination
-        isAdmin: 'false'   // This is a frontend request
-      },
+    const servicesResponse = await fetch(`${baseUrl}/api/admin/services?all=true&isAdmin=false`, {
       headers: {
         "Content-Type": "application/json",
       },
+      cache: 'no-store'
     });
 
+    if (!servicesResponse.ok) {
+      throw new Error(`HTTP error! status: ${servicesResponse.status}`);
+    }
+
+    const servicesData = await servicesResponse.json();
+
     // Filter only active services
-    const activeServices = servicesResponse.data.data
+    const activeServices = servicesData.data
       .filter((service: any) => service.status === "active")
       .map((service: any) => service.title);
 
@@ -41,13 +46,19 @@ async function getContactData() {
     const services = [...activeServices, "Other"];
 
     // Fetch contact information
-    const contactResponse = await axios.get(`${baseUrl}/api/admin/contact`, {
+    const contactResponse = await fetch(`${baseUrl}/api/admin/contact`, {
       headers: {
         "Content-Type": "application/json",
       },
+      cache: 'no-store'
     });
 
-    const contactInfo = contactResponse.data.success ? contactResponse.data.data : {
+    if (!contactResponse.ok) {
+      throw new Error(`HTTP error! status: ${contactResponse.status}`);
+    }
+
+    const contactData = await contactResponse.json();
+    const contactInfo = contactData.success ? contactData.data : {
       phone: "9158549166",
       email: "info@filigreesolutions.com",
       address: "88/153, East Street, Pandiyan Nagar",

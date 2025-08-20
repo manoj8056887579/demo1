@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search');
     const all = searchParams.get('all');
     const isAdmin = searchParams.get('isAdmin') === 'true';
-    
+     
     // Build query based on whether it's an admin or frontend request
     const query: any = {};
     
