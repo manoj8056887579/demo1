@@ -88,7 +88,7 @@ export const Portfolio = ({ portfolioItems = [], categories = [] }: PortfolioPro
     setCurrentPage(1)
   }, [selectedCategory, searchTerm])
 
-  // Create categories array with "All" option
+  // Create categories array with only dynamic categories from the API
   const allCategories = ["All", ...categories.map((cat) => cat.name)]
 
   const filteredProjects = portfolioItems.filter((project) => {
@@ -106,7 +106,7 @@ export const Portfolio = ({ portfolioItems = [], categories = [] }: PortfolioPro
   const currentProjects = filteredProjects.slice(startIndex, endIndex)
 
   // Function to create URL-friendly slug from portfolio title
-  const createSlug = (title: string) => {
+  const createSlug = (title: string) => { 
     return title
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
@@ -114,21 +114,13 @@ export const Portfolio = ({ portfolioItems = [], categories = [] }: PortfolioPro
   }
 
   const getCategoryIcon = (category: string) => {
-    switch (category) {
-      case "Structural Analysis":
-        return <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4" />
-      case "CAD Modeling":
-        return <Settings className="h-3 w-3 sm:h-4 sm:w-4" />
-      case "EV Components":
-        return <Zap className="h-3 w-3 sm:h-4 sm:w-4" />
-      case "Telecom":
-        return <Building className="h-3 w-3 sm:h-4 sm:w-4" />
-      case "Industrial":
-        return <Target className="h-3 w-3 sm:h-4 sm:w-4" />
-      default:
-        return <Filter className="h-3 w-3 sm:h-4 sm:w-4" />
+    // Only return icons for All and default case
+    if (category === "All") {
+      return <Filter className="h-3 w-3 sm:h-4 sm:w-4" />
     }
+    return <Filter className="h-3 w-3 sm:h-4 sm:w-4" />
   }
+
 
   return (
     <>
