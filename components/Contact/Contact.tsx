@@ -285,10 +285,13 @@ export const Contact = ({ services, contactInfo }: ContactProps) => {
                         <Input
                           id="phone"
                           type="tel"
+                          pattern="[0-9]*"
+                          inputMode="numeric"
                           value={formData.phone}
-                          onChange={(e) =>
-                            handleInputChange("phone", e.target.value)
-                          }
+                          onChange={(e) => {
+                            const numericValue = e.target.value.replace(/[^0-9]/g, '');
+                            handleInputChange("phone", numericValue);
+                          }}
                           placeholder="Enter your phone number"
                           className="mt-1.5 sm:mt-2 h-10 sm:h-12 text-sm sm:text-base"
                         />

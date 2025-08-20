@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,8 +12,8 @@ import {
   Select,
   SelectContent,
   SelectItem,
-  SelectTrigger,
-  SelectValue,
+  SelectTrigger, 
+  SelectValue, 
 } from "@/components/ui/select";
 import {
   Dialog,
@@ -98,7 +98,9 @@ export default function ServicesPage() {
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [isFormSubmitted, setIsFormSubmitted] = useState(false);
-  
+  const scrollPositionRef = useRef<number>(0);
+
+
 
   // Quill configuration - only allow paragraph, bullet list, and numbered list
   const quillModules = {
@@ -187,6 +189,9 @@ export default function ServicesPage() {
   }, [currentPage]);
 
   const handleEdit = (service: Service) => {
+    // Store current scroll position when opening modal
+    scrollPositionRef.current = window.scrollY;
+    
     setEditingId(service._id || null);
     setFormData({
       title: service.title,
@@ -423,9 +428,9 @@ export default function ServicesPage() {
   };
 
   const handleCancel = () => {
-    // Store current scroll position
-    const currentScroll = window.scrollY;
-
+    // Prevent any scroll during state updates
+    const savedScrollPosition = scrollPositionRef.current;
+    
     setIsAddModalOpen(false);
     setIsEditModalOpen(false);
     setEditingId(null);
@@ -450,16 +455,14 @@ export default function ServicesPage() {
       mainImage: null,
       galleryImages: [],
     });
-
-    // Restore scroll position after state updates
-    setTimeout(
-      () =>
-        window.scrollTo({
-          top: currentScroll,
-          behavior: "instant",
-        }),
-      0
-    );
+    
+    // Immediately restore scroll position
+    requestAnimationFrame(() => {
+      window.scrollTo({ 
+        top: savedScrollPosition, 
+        behavior: "instant" 
+      });
+    });
   };
 
   const addProcessStep = () => {
@@ -716,48 +719,48 @@ export default function ServicesPage() {
           onOpenChange={(open) => {
             if (!open) {
               setIsFormSubmitted(false);
+              
+              // Store the scroll position before any state changes
+              const savedScrollPosition = scrollPositionRef.current;
+              
               handleCancel();
-              // Preserve scroll position when closing modal
-              const currentScroll = window.scrollY;
-              setTimeout(
-                () =>
-                  window.scrollTo({
-                    top: currentScroll,
-                    behavior: "instant",
-                  }),
-                0
-              );
+              
+              // Restore scroll position after modal closes with multiple attempts
+              setTimeout(() => {
+                window.scrollTo({ 
+                  top: savedScrollPosition, 
+                  behavior: "instant" 
+                });
+              }, 50);
+              
+              // Backup restoration in case the first one doesn't work
+              setTimeout(() => {
+                window.scrollTo({ 
+                  top: savedScrollPosition, 
+                  behavior: "instant" 
+                });
+              }, 200);
+              
+              // Final restoration attempt
+              setTimeout(() => {
+                window.scrollTo({ 
+                  top: savedScrollPosition, 
+                  behavior: "instant" 
+                });
+              }, 500);
+            } else {
+              // Store scroll position when opening modal
+              scrollPositionRef.current = window.scrollY;
             }
             setIsAddModalOpen(open);
-            if (!open) {
-              setEditingId(null);
-              setFormData({
-                title: "",
-                heading: "",
-                shortDescription: "",
-                fullDescription: "",
-                features: "",
-                applications: "",
-                technologies: "",
-                image: "",
-                gallery: [],
-                status: "active",
-                featured: false,
-                seoTitle: "",
-                seoDescription: "",
-                seoKeywords: "",
-              });
-              setProcessSteps([{ title: "", description: "" }]);
-              setSelectedFiles({
-                mainImage: null,
-                galleryImages: [],
-              });
-            }
           }}
         >
           <DialogTrigger asChild>
             <Button
               onClick={() => {
+                // Store current scroll position when opening modal
+                scrollPositionRef.current = window.scrollY;
+                
                 setEditingId(null);
                 setFormData({
                   title: "",
@@ -1628,6 +1631,9 @@ export default function ServicesPage() {
             </p>
             <Button
               onClick={() => {
+                // Store current scroll position when opening modal
+                scrollPositionRef.current = window.scrollY;
+                
                 setEditingId(null);
                 setFormData({
                   title: "",

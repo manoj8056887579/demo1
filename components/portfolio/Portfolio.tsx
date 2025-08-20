@@ -220,11 +220,7 @@ export const Portfolio = ({ portfolioItems = [], categories = [] }: PortfolioPro
                         }`}
                       >
                         {getCategoryIcon(category)}
-                        <span className="hidden xs:inline sm:inline">{category}</span>
-                        <span className="xs:hidden sm:hidden">
-                          {category.slice(0, 8)}
-                          {category.length > 8 ? "..." : ""}
-                        </span>
+                        <span>{category}</span>
                       </Button>
                     ))}
                   </div>
