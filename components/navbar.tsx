@@ -143,10 +143,19 @@ function NavbarContent() {
 
   const handleFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    // For phone field, only allow numeric input
+    if (name === 'phone') {
+      const numericValue = value.replace(/[^0-9]/g, '');
+      setFormData((prev) => ({
+        ...prev,
+        [name]: numericValue,
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
   };
 
   const handleFormSubmit = async (e: React.FormEvent) => {
@@ -612,6 +621,8 @@ function NavbarContent() {
                     <input
                       type="tel"
                       name="phone"
+                      pattern="[0-9]*"
+                      inputMode="numeric"
                       value={formData.phone}
                       onChange={handleFormChange}
                       required

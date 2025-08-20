@@ -643,10 +643,14 @@ export default function LeadManager() {
                   </Label>
                   <Input
                     id="phone"
+                    type="tel"
+                    pattern="[0-9]*"
+                    inputMode="numeric"
                     value={newLead.phone}
-                    onChange={(e) =>
-                      setNewLead({ ...newLead, phone: e.target.value })
-                    }
+                    onChange={(e) => {
+                      const numericValue = e.target.value.replace(/[^0-9]/g, '');
+                      setNewLead({ ...newLead, phone: numericValue });
+                    }}
                     placeholder="Enter phone number"
                   />
                 </div>
@@ -1216,13 +1220,17 @@ export default function LeadManager() {
                   </Label>
                   <Input
                     id="edit-phone"
+                    type="tel"
+                    pattern="[0-9]*"
+                    inputMode="numeric"
                     value={selectedLead.phone}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      const numericValue = e.target.value.replace(/[^0-9]/g, '');
                       setSelectedLead({
                         ...selectedLead,
-                        phone: e.target.value,
-                      })
-                    }
+                        phone: numericValue,
+                      });
+                    }}
                     className="focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>

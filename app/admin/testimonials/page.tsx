@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
-  SelectItem,
+  SelectItem, 
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -68,6 +68,24 @@ export default function TestimonialsPage() {
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
   const [isLoadingTestimonials, setIsLoadingTestimonials] = useState(true);
   const [isFormSubmitted, setIsFormSubmitted] = useState(false);
+  const scrollPositionRef = useRef<number>(0);
+
+  // Utility functions to prevent scroll jumping
+  const preventScrollJump = () => {
+    const scrollY = window.scrollY;
+    scrollPositionRef.current = scrollY;
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.width = '100%';
+  };
+
+  const restoreScroll = () => {
+    const scrollY = scrollPositionRef.current;
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.width = '';
+    window.scrollTo({ top: scrollY, behavior: 'instant' });
+  };
 
   const [formData, setFormData] = useState({
     name: "",
@@ -150,6 +168,9 @@ export default function TestimonialsPage() {
   }, []);
 
   const handleEdit = (testimonial: Testimonial) => {
+    // Store current scroll position when opening modal
+    scrollPositionRef.current = window.scrollY;
+    
     setEditingId(testimonial._id || null);
     // Reset any previous file selection state
     setSelectedFile(null);
@@ -313,6 +334,9 @@ export default function TestimonialsPage() {
   };
 
   const handleCancel = () => {
+    // Prevent any scroll during state updates
+    const savedScrollPosition = scrollPositionRef.current;
+    
     // Reset modal state
     setIsEditing(false);
     setEditingId(null);
@@ -331,6 +355,14 @@ export default function TestimonialsPage() {
       status: "published",
       date: new Date().toISOString().split("T")[0], // Set current date as default
       servicesType: "",
+    });
+    
+    // Immediately restore scroll position
+    requestAnimationFrame(() => {
+      window.scrollTo({ 
+        top: savedScrollPosition, 
+        behavior: "instant" 
+      });
     });
   };
 
@@ -414,16 +446,50 @@ export default function TestimonialsPage() {
         <Dialog
           open={isEditing}
           onOpenChange={(open) => {
-            setIsEditing(open);
             if (!open) {
-              handleCancel();
               setIsFormSubmitted(false);
+              
+              // Store the scroll position before any state changes
+              const savedScrollPosition = scrollPositionRef.current;
+              
+              handleCancel();
+              
+              // Restore scroll position after modal closes with multiple attempts
+              setTimeout(() => {
+                window.scrollTo({ 
+                  top: savedScrollPosition, 
+                  behavior: "instant" 
+                });
+              }, 50);
+              
+              // Backup restoration in case the first one doesn't work
+              setTimeout(() => {
+                window.scrollTo({ 
+                  top: savedScrollPosition, 
+                  behavior: "instant" 
+                });
+              }, 200);
+              
+              // Final restoration attempt
+              setTimeout(() => {
+                window.scrollTo({ 
+                  top: savedScrollPosition, 
+                  behavior: "instant" 
+                });
+              }, 500);
+            } else {
+              // Store scroll position when opening modal
+              scrollPositionRef.current = window.scrollY;
             }
+            setIsEditing(open);
           }}
         >
           <DialogTrigger asChild>
             <Button
               onClick={() => {
+                // Store current scroll position when opening modal
+                scrollPositionRef.current = window.scrollY;
+                
                 setEditingId(null);
                 setFormData({
                   name: "",
@@ -863,7 +929,11 @@ export default function TestimonialsPage() {
               Add your first testimonial to showcase client feedback.
             </p>
             <Button
-              onClick={() => setIsEditing(true)}
+              onClick={() => {
+                // Store current scroll position when opening modal
+                scrollPositionRef.current = window.scrollY;
+                setIsEditing(true);
+              }}
               className="bg-admin-gradient text-white border-0"
             >
               <Plus className="h-4 w-4 mr-2" />

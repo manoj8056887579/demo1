@@ -5,12 +5,12 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback  , AvatarImage } from "@/components/ui/avatar"
 import { useToast } from "@/hooks/use-toast"
 import { Save, Shield, Calendar, Camera, Eye, EyeOff, Loader2 } from 'lucide-react'
 import axios from "axios"
 
-interface ProfileData {
+interface ProfileData { 
   firstName: string
   lastName: string
   email: string
@@ -275,8 +275,14 @@ export default function ProfileInformation() {
             </Label>
             <Input
               id="phone"
+              type="tel"
+              pattern="[0-9]*"
+              inputMode="numeric"
               value={profileData.phone}
-              onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
+              onChange={(e) => {
+                const numericValue = e.target.value.replace(/[^0-9]/g, '');
+                setProfileData({ ...profileData, phone: numericValue });
+              }}
               className="mt-2"
             />
           </div>

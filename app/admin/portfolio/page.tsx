@@ -1,16 +1,13 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import dynamic from "next/dynamic";
-
-// Dynamically import ReactQuill to avoid SSR issues
-const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
+import RichTextEditor from "@/components/ui/rich-text-editor";
 import {
   Select,
   SelectContent,
@@ -104,6 +101,24 @@ export default function PortfolioPage() {
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [isFormSubmitted, setIsFormSubmitted] = useState(false);
+  const scrollPositionRef = useRef<number>(0);
+
+  // Utility functions to prevent scroll jumping
+  const preventScrollJump = () => {
+    const scrollY = window.scrollY;
+    scrollPositionRef.current = scrollY;
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.width = '100%';
+  };
+
+  const restoreScroll = () => {
+    const scrollY = scrollPositionRef.current;
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.width = '';
+    window.scrollTo({ top: scrollY, behavior: 'instant' });
+  };
 
   // Quill configuration - only allow paragraph, bullet list, and numbered list
   const quillModules = {
@@ -112,7 +127,7 @@ export default function PortfolioPage() {
 
   const quillFormats = ["list", "bullet"];
 
-  // Helper function to check if ReactQuill content is empty
+  // Helper function to check if RichTextEditor content is empty
   const isQuillContentEmpty = (content: string) => {
     if (!content) return true;
     // Remove HTML tags and check if there's actual text content
@@ -453,6 +468,9 @@ export default function PortfolioPage() {
   };
 
   const handleEdit = (item: PortfolioItem) => {
+    // Store current scroll position when opening modal
+    scrollPositionRef.current = window.scrollY;
+    
     setEditingId(item._id || null);
     setFormData({
       title: item.title,
@@ -674,7 +692,14 @@ export default function PortfolioPage() {
           description: "Portfolio item has been successfully deleted.",
         });
         setDeletingItemId(null);
-        fetchPortfolioItems(currentPage);
+
+        // Check if we need to go back to previous page
+        const remainingItems = portfolioItems.filter((item) => item._id !== id);
+        if (remainingItems.length === 0 && currentPage > 1) {
+          setCurrentPage(currentPage - 1);
+        } else {
+          fetchPortfolioItems(currentPage);
+        }
       } else {
         toast({
           title: "Error",
@@ -692,6 +717,9 @@ export default function PortfolioPage() {
   };
 
   const handleCancel = () => {
+    // Prevent any scroll during state updates
+    const savedScrollPosition = scrollPositionRef.current;
+    
     setIsAddModalOpen(false);
     setEditingId(null);
     setFormData({
@@ -720,6 +748,14 @@ export default function PortfolioPage() {
     setSelectedFiles({
       mainImage: null,
       galleryImages: [],
+    });
+    
+    // Immediately restore scroll position
+    requestAnimationFrame(() => {
+      window.scrollTo({ 
+        top: savedScrollPosition, 
+        behavior: "instant" 
+      });
     });
   };
 
@@ -960,16 +996,50 @@ export default function PortfolioPage() {
         <Dialog
           open={isAddModalOpen}
           onOpenChange={(open) => {
-            setIsAddModalOpen(open);
             if (!open) {
-              handleCancel();
               setIsFormSubmitted(false);
+              
+              // Store the scroll position before any state changes
+              const savedScrollPosition = scrollPositionRef.current;
+              
+              handleCancel();
+              
+              // Restore scroll position after modal closes with multiple attempts
+              setTimeout(() => {
+                window.scrollTo({ 
+                  top: savedScrollPosition, 
+                  behavior: "instant" 
+                });
+              }, 50);
+              
+              // Backup restoration in case the first one doesn't work
+              setTimeout(() => {
+                window.scrollTo({ 
+                  top: savedScrollPosition, 
+                  behavior: "instant" 
+                });
+              }, 200);
+              
+              // Final restoration attempt
+              setTimeout(() => {
+                window.scrollTo({ 
+                  top: savedScrollPosition, 
+                  behavior: "instant" 
+                });
+              }, 500);
+            } else {
+              // Store scroll position when opening modal
+              scrollPositionRef.current = window.scrollY;
             }
+            setIsAddModalOpen(open);
           }}
         >
           <DialogTrigger asChild>
             <Button
               onClick={() => {
+                // Store current scroll position when opening modal
+                scrollPositionRef.current = window.scrollY;
+                
                 setEditingId(null);
                 setFormData({
                   title: "",
@@ -1400,8 +1470,7 @@ export default function PortfolioPage() {
                         : ""
                     }`}
                   >
-                    <ReactQuill
-                      theme="snow"
+                    <RichTextEditor
                       value={formData.fullDescription}
                       onChange={handleFullDescriptionChange}
                       modules={quillModules}
@@ -2210,6 +2279,9 @@ export default function PortfolioPage() {
             </p>
             <Button
               onClick={() => {
+                // Store current scroll position when opening modal
+                scrollPositionRef.current = window.scrollY;
+                
                 setEditingId(null);
                 setFormData({
                   title: "",
