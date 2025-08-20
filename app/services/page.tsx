@@ -1,8 +1,10 @@
-import axios from "axios"
 import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import { AllServices } from "@/components/services/AllServices"
 import { ServicesPageSEO } from "@/components/services/ServicesPageSEO"
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 // Dynamic SEO metadata will be handled by the SEO provider
 export const metadata = {
@@ -20,22 +22,25 @@ async function getServicesData() {
 
   try {
     // Frontend request - will automatically only get active services
-    const response = await axios.get(`${baseUrl}/api/admin/services`, {
-      params: {
-        all: 'true',       // Get all without pagination
-        isAdmin: 'false'   // This is a frontend request
-      },
+    const response = await fetch(`${baseUrl}/api/admin/services?all=true&isAdmin=false`, {
       headers: {
         "Content-Type": "application/json",
       },
+      cache: 'no-store'
     });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
     
-    if (!response.data.success) {
-      throw new Error(response.data.message || 'Failed to fetch services');
+    if (!data.success) {
+      throw new Error(data.message || 'Failed to fetch services');
     }
     
     // Double check to ensure only active services are included
-    const activeServices = response.data.data.filter(
+    const activeServices = data.data.filter(
       (service: any) => service.status === "active"
     );
     
@@ -43,7 +48,7 @@ async function getServicesData() {
   } catch (error) {
     console.error("Error fetching services data:", error);
     throw new Error(
-      (error as any).response?.data?.error || "Failed to fetch services data"
+      error instanceof Error ? error.message : "Failed to fetch services data"
     );
   }
 }

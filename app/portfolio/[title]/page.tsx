@@ -1,9 +1,11 @@
 
-import axios from "axios"
 import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import { DetailPortfolio } from "@/components/portfolio/DetailPortfolio"
 import { notFound } from "next/navigation"
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 interface Props {
   params: { title: string }
@@ -24,21 +26,28 @@ async function getPortfolioItemData(titleSlug: string) {
       : `${process.env.APP_URL}`;
 
   try {
-    const response = await axios.get(`${baseUrl}/api/admin/portfolio/${titleSlug}`, {
+    const response = await fetch(`${baseUrl}/api/admin/portfolio/${titleSlug}`, {
       headers: {
         "Content-Type": "application/json",
       },
+      cache: 'no-store'
     });
 
-    if (response.data.success) {
-      return { portfolioItem: response.data.data };
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (data.success) {
+      return { portfolioItem: data.data };
     } else {
       return { portfolioItem: null };
     }
   } catch (error) {
     console.error("Error fetching portfolio item data:", error);
     throw new Error(
-      (error as any).response?.data?.error || "Failed to fetch portfolio item data"
+      error instanceof Error ? error.message : "Failed to fetch portfolio item data"
     );
   }
 }

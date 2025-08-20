@@ -4,6 +4,9 @@ import Footer from "@/components/footer";
 import CompleteHome from "@/components/Home/CompleteHome";
 import { HomeSeo } from "@/components/Home/HomeSeo";
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 // Server-side data fetching functions
 async function getServicesData() {
   const baseUrl =
@@ -16,7 +19,7 @@ async function getServicesData() {
       headers: {
         "Content-Type": "application/json",
       },
-      cache: "no-store", // Ensure fresh data
+      next: { revalidate: 0 },
     });
 
     if (!response.ok) {
@@ -50,7 +53,7 @@ async function getTestimonialsData() {
       headers: {
         "Content-Type": "application/json",
       },
-      cache: "no-store", // Ensure fresh data
+      next: { revalidate: 0 },
     });
 
     if (!response.ok) {

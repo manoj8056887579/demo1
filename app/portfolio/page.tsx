@@ -1,9 +1,11 @@
 
-import axios from "axios"
 import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import { Portfolio } from "@/components/portfolio/Portfolio"
 import { PortfolioSeo } from "@/components/portfolio/portfolioSeo"
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 // Dynamic SEO metadata will be handled by the SEO provider
 export const metadata = {
@@ -21,26 +23,37 @@ export const metadata = {
 
   try {
     const [portfolioResponse, categoriesResponse] = await Promise.all([
-      axios.get(`${baseUrl}/api/admin/portfolio?all=true`, {
+      fetch(`${baseUrl}/api/admin/portfolio?all=true`, {
         headers: {
           "Content-Type": "application/json",
         },
+        cache: 'no-store'
       }),
-      axios.get(`${baseUrl}/api/admin/portfolio/categories`, {
+      fetch(`${baseUrl}/api/admin/portfolio/categories`, {
         headers: {
           "Content-Type": "application/json",
         },
+        cache: 'no-store'
       })
     ]);
 
+    if (!portfolioResponse.ok || !categoriesResponse.ok) {
+      throw new Error('Failed to fetch portfolio data');
+    }
+
+    const [portfolioData, categoriesData] = await Promise.all([
+      portfolioResponse.json(),
+      categoriesResponse.json()
+    ]);
+
     // Filter only published portfolio items
-    const publishedPortfolioItems = portfolioResponse.data.data.filter(
+    const publishedPortfolioItems = portfolioData.data.filter(
       (item: any) => item.status === "published"
     );
 
     return { 
       portfolioItems: publishedPortfolioItems,
-      categories: categoriesResponse.data.data || []
+      categories: categoriesData.data || []
     };
   } catch (error) {
     console.error("Error fetching portfolio data:", error);
