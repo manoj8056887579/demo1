@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectDB from "@/config/models/connectDB";
 import Portfolio from "@/config/utils/admin/portfolio/PortfolioSchema";
-import { unlink, rmdir } from "fs/promises";
-import path from "path";
-import { existsSync } from "fs";
+import { deleteFromCloudinary } from "@/config/utils/cloudinary";
 
 // GET - Fetch single portfolio item by ID or title
-export async function GET(
+export async function GET( 
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
@@ -79,6 +77,47 @@ export async function PUT(
     await connectDB();
 
     const body = await request.json();
+    const existingPortfolio = await Portfolio.findById(params.id);
+
+    if (!existingPortfolio) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Portfolio item not found",
+        },
+        { status: 404 }
+      );
+    }
+
+    // Handle main image update
+    if (body.image && body.image !== existingPortfolio.image) {
+      try {
+        // Delete old main image from Cloudinary
+        const oldImageUrlParts = existingPortfolio.image.split('/');
+        const oldImagePublicId = oldImageUrlParts.slice(oldImageUrlParts.indexOf('portfolio')).join('/').split('.')[0];
+        await deleteFromCloudinary(oldImagePublicId);
+      } catch (error) {
+        console.error("Error deleting old main image:", error);
+      }
+    }
+
+    // Handle gallery images update
+    if (body.gallery) {
+      // Find images that were removed
+      const oldGalleryUrls = existingPortfolio.gallery || [];
+      const removedImages = oldGalleryUrls.filter((oldUrl: string) => !body.gallery.includes(oldUrl));
+
+      // Delete removed images from Cloudinary
+      for (const removedUrl of removedImages) {
+        try {
+          const urlParts = removedUrl.split('/');
+          const publicId = urlParts.slice(urlParts.indexOf('portfolio')).join('/').split('.')[0];
+          await deleteFromCloudinary(publicId);
+        } catch (error) {
+          console.error("Error deleting removed gallery image:", error);
+        }
+      }
+    }
 
     // Generate slug from title if title is being updated
     if (body.title) {
@@ -125,13 +164,14 @@ export async function PUT(
 // DELETE - Delete portfolio item by ID
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   try {
+    const { id } = await Promise.resolve(context.params);
     await connectDB();
 
     // First get the portfolio item to access its data before deletion
-    const portfolioItemToDelete = await Portfolio.findById(params.id);
+    const portfolioItemToDelete = await Portfolio.findById(id);
 
     if (!portfolioItemToDelete) {
       return NextResponse.json(
@@ -150,46 +190,38 @@ export async function DELETE(
       .replace(/(^-|-$)/g, "");
 
     // Delete the portfolio item from database
-    await Portfolio.findByIdAndDelete(params.id);
+    await Portfolio.findByIdAndDelete(id);
 
-    // Delete related image files and directories
+    // Delete related images from Cloudinary
     try {
-      const baseDir = path.join(
-        process.cwd(),
-        "public",
-        "admin",
-        "portfolio",
-        "main"
-      );
-
-      // Delete main image directory
-      const mainImageDir = path.join(baseDir, portfolioTitleSlug);
-      if (existsSync(mainImageDir)) {
-        // Delete all files in the main image directory
-        const fs = require("fs");
-        const files = fs.readdirSync(mainImageDir);
-        for (const file of files) {
-          await unlink(path.join(mainImageDir, file));
+      // Delete main image if it exists
+      if (portfolioItemToDelete.image) {
+        try {
+          // Extract public_id from the URL
+          const urlParts = portfolioItemToDelete.image.split('/');
+          const publicId = urlParts.slice(urlParts.indexOf('portfolio')).join('/').split('.')[0];
+          await deleteFromCloudinary(publicId);
+        } catch (error) {
+          console.error("Error deleting main image:", error);
         }
-        // Delete the directory
-        await rmdir(mainImageDir);
       }
 
-      // Delete gallery directory
-      const galleryDir = path.join(baseDir, "gallery", portfolioTitleSlug);
-      if (existsSync(galleryDir)) {
-        // Delete all files in the gallery directory
-        const fs = require("fs");
-        const files = fs.readdirSync(galleryDir);
-        for (const file of files) {
-          await unlink(path.join(galleryDir, file));
+      // Delete gallery images if they exist
+      if (portfolioItemToDelete.gallery && portfolioItemToDelete.gallery.length > 0) {
+        for (const imageUrl of portfolioItemToDelete.gallery) {
+          try {
+            // Extract public_id from the URL
+            const urlParts = imageUrl.split('/');
+            const publicId = urlParts.slice(urlParts.indexOf('portfolio')).join('/').split('.')[0];
+            await deleteFromCloudinary(publicId);
+          } catch (error) {
+            console.error("Error deleting gallery image:", error);
+          }
         }
-        // Delete the directory
-        await rmdir(galleryDir);
       }
 
       console.log(
-        `Deleted image directories for portfolio item: ${portfolioItemToDelete.title}`
+        `Deleted images from Cloudinary for portfolio item: ${portfolioItemToDelete.title}`
       );
     } catch (fileError) {
       console.error("Error deleting image files:", fileError);

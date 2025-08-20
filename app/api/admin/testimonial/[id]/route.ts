@@ -1,15 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectDB from "@/config/models/connectDB";
 import Testimonial from "@/config/utils/admin/testimonial/testimonialSchema";
-import { writeFile, unlink } from "fs/promises";
-import path from "path";
-import { existsSync } from "fs";
+import { uploadToCloudinary, deleteFromCloudinary } from "@/config/utils/cloudinary";
 
 // GET - Fetch single testimonial by ID
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
-) {
+) { 
   try {
     await connectDB();
     
@@ -76,15 +74,9 @@ export async function PUT(
         const bytes = await file.arrayBuffer();
         const buffer = Buffer.from(bytes);
 
-        // Generate unique filename
-        const timestamp = Date.now();
-        const fileExtension = path.extname(file.name);
-        const fileName = `testimonial-${timestamp}${fileExtension}`;
-        const filePath = path.join(process.cwd(), "public", "testimonials", fileName);
-
-        // Save file to public/testimonials
-        await writeFile(filePath, buffer);
-        avatarPath = `/testimonials/${fileName}`;
+        // Upload to Cloudinary
+        const result = await uploadToCloudinary(buffer, 'testimonials');
+        avatarPath = result.secure_url;
       } else {
         // Keep existing avatar if no new file is uploaded
         const existingTestimonial = await Testimonial.findById(params.id);
@@ -192,19 +184,17 @@ export async function DELETE(
     // Delete the testimonial from database
     const deletedTestimonial = await Testimonial.findByIdAndDelete(params.id);
     
-    // Delete the associated image file if it exists
-    if (testimonialToDelete.avatar && testimonialToDelete.avatar.startsWith('/testimonials/')) {
+    // Delete the associated image from Cloudinary if it exists
+    if (testimonialToDelete.avatar) {
       try {
-        const fileName = testimonialToDelete.avatar.replace('/testimonials/', '');
-        const filePath = path.join(process.cwd(), "public", "testimonials", fileName);
+        // Extract public_id from Cloudinary URL
+        const urlParts = testimonialToDelete.avatar.split('/');
+        const publicId = `testimonials/${urlParts[urlParts.length - 1].split('.')[0]}`;
         
-        // Check if file exists before trying to delete
-        if (existsSync(filePath)) {
-          await unlink(filePath);
-          console.log(`Deleted image file: ${filePath}`);
-        }
+        await deleteFromCloudinary(publicId);
+        console.log(`Deleted image from Cloudinary: ${publicId}`);
       } catch (fileError) {
-        console.error("Error deleting image file:", fileError);
+        console.error("Error deleting image from Cloudinary:", fileError);
         // Don't fail the entire operation if file deletion fails
       }
     }

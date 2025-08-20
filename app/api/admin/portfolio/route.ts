@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectDB from "@/config/models/connectDB";
 import Portfolio from "@/config/utils/admin/portfolio/PortfolioSchema";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
+import { uploadToCloudinary } from "@/config/utils/cloudinary";
 
 // GET - Fetch all portfolio items with optional pagination
 export async function GET(request: NextRequest) {
   try {
     await connectDB();
-    
+     
     const { searchParams } = new URL(request.url);
     const page = searchParams.get('page');
     const limit = parseInt(searchParams.get('limit') || '6');
@@ -113,34 +112,14 @@ export async function POST(request: NextRequest) {
       const bytes = await file.arrayBuffer();
       const buffer = Buffer.from(bytes);
       
-      // Create directory structure
-      const baseDir = path.join(process.cwd(), "public", "admin", "portfolio", "main");
-      let targetDir: string;
-      
-      if (type === "main") {
-        targetDir = path.join(baseDir, portfolioTitle);
-      } else {
-        targetDir = path.join(baseDir, "gallery", portfolioTitle);
-      }
-      
-      // Ensure directory exists
-      await mkdir(targetDir, { recursive: true });
-      
-      // Generate unique filename
-      const timestamp = Date.now();
-      const fileExtension = path.extname(file.name);
-      const fileName = `${timestamp}${fileExtension}`;
-      const filePath = path.join(targetDir, fileName);
-      
-      // Write file
-      await writeFile(filePath, buffer);
-      
-      // Return relative path for database storage
-      const relativePath = `/admin/portfolio/main/${type === "main" ? portfolioTitle : `gallery/${portfolioTitle}`}/${fileName}`;
+      // Upload to Cloudinary with appropriate folder structure
+      const folder = `portfolio/${type === "main" ? portfolioTitle : `gallery/${portfolioTitle}`}`;
+      const result = await uploadToCloudinary(buffer, folder);
       
       return NextResponse.json({
         success: true,
-        filePath: relativePath,
+        filePath: result.secure_url,
+        publicId: result.public_id,
         message: "File uploaded successfully",
       });
     }

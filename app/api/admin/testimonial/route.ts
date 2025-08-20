@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectDB from "@/config/models/connectDB";
 import Testimonial from "@/config/utils/admin/testimonial/testimonialSchema";
-import { writeFile } from "fs/promises";
-import path from "path";
+import { uploadToCloudinary } from "@/config/utils/cloudinary";
 
 // GET - Fetch all testimonials
 export async function GET(request: NextRequest) {
   try { 
-    await connectDB();
+    await connectDB(); 
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
@@ -80,20 +79,9 @@ export async function POST(request: NextRequest) {
         const bytes = await file.arrayBuffer();
         const buffer = Buffer.from(bytes);
 
-        // Generate unique filename
-        const timestamp = Date.now();
-        const fileExtension = path.extname(file.name);
-        const fileName = `testimonial-${timestamp}${fileExtension}`;
-        const filePath = path.join(
-          process.cwd(),
-          "public",
-          "testimonials",
-          fileName
-        );
-
-        // Save file to public/testimonials
-        await writeFile(filePath, buffer);
-        avatarPath = `/testimonials/${fileName}`;
+        // Upload to Cloudinary
+        const result = await uploadToCloudinary(buffer, 'testimonials');
+        avatarPath = result.secure_url;
       }
     } else {
       // Handle JSON data

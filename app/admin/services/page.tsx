@@ -51,6 +51,7 @@ import {
   Settings,
   Upload,
   ImageIcon,
+  Loader2
 } from "lucide-react";
 import "@/styles/quill.css";
 
@@ -98,6 +99,9 @@ export default function ServicesPage() {
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [isFormSubmitted, setIsFormSubmitted] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deletingButtonId, setDeletingButtonId] = useState<string | null>(null);
   const scrollPositionRef = useRef<number>(0);
 
 
@@ -219,6 +223,7 @@ export default function ServicesPage() {
 
   const handleSave = async () => {
     setIsFormSubmitted(true);
+    setIsSaving(true);
 
     // Validate required fields
     if (
@@ -378,6 +383,8 @@ export default function ServicesPage() {
         description: "Failed to save service",
         variant: "destructive",
       });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -390,6 +397,8 @@ export default function ServicesPage() {
   };
 
   const handleDelete = async (id: string) => {
+    setIsDeleting(true);
+    setDeletingButtonId(id);
     try {
       const response = await fetch(`/api/admin/services/${id}`, {
         method: "DELETE",
@@ -424,6 +433,9 @@ export default function ServicesPage() {
         description: "Failed to delete service",
         variant: "destructive",
       });
+    } finally {
+      setIsDeleting(false);
+      setDeletingButtonId(null);
     }
   };
 
@@ -1402,9 +1414,19 @@ export default function ServicesPage() {
                 <Button
                   onClick={handleSave}
                   className="bg-admin-gradient text-white border-0"
+                  disabled={isSaving}
                 >
-                  <Save className="h-4 w-4 mr-2" />
-                  Save Service
+                  {isSaving ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4 mr-2" />
+                      Save Service
+                    </>
+                  )}
                 </Button>
                 <Button variant="outline" onClick={handleCancel}>
                   <X className="h-4 w-4 mr-2" />
@@ -1436,8 +1458,16 @@ export default function ServicesPage() {
                 deletingServiceId && handleDelete(deletingServiceId)
               }
               className="bg-red-600 hover:bg-red-700 text-white"
+              disabled={isDeleting}
             >
-              Delete
+              {isDeleting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1569,9 +1599,19 @@ export default function ServicesPage() {
                       size="sm"
                       variant="outline"
                       onClick={() => handleDeleteClick(service._id!)}
+                      disabled={deletingButtonId === service._id}
                     >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Delete
+                      {deletingButtonId === service._id ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600 mr-2"></div>
+                          Deleting...
+                        </>
+                      ) : (
+                        <>
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete
+                        </>
+                      )}
                     </Button>
                   </div>
                 </div>
