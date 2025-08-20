@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectDB from "@/config/models/connectDB";
 import Services from "@/config/utils/admin/services/servicesSchema";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
+import { uploadToCloudinary } from "@/config/utils/cloudinary";
+
 
 // GET - Fetch all services with optional pagination
 export async function GET(request: NextRequest) {
@@ -119,34 +119,14 @@ export async function POST(request: NextRequest) {
       const bytes = await file.arrayBuffer();
       const buffer = Buffer.from(bytes);
       
-      // Create directory structure
-      const baseDir = path.join(process.cwd(), "public", "admin", "services", "main");
-      let targetDir: string;
-      
-      if (type === "main") {
-        targetDir = path.join(baseDir, serviceTitle);
-      } else {
-        targetDir = path.join(baseDir, "gallery", serviceTitle);
-      }
-      
-      // Ensure directory exists
-      await mkdir(targetDir, { recursive: true });
-      
-      // Generate unique filename
-      const timestamp = Date.now();
-      const fileExtension = path.extname(file.name);
-      const fileName = `${timestamp}${fileExtension}`;
-      const filePath = path.join(targetDir, fileName);
-      
-      // Write file
-      await writeFile(filePath, buffer);
-      
-      // Return relative path for database storage
-      const relativePath = `/admin/services/main/${type === "main" ? serviceTitle : `gallery/${serviceTitle}`}/${fileName}`;
+      // Upload to Cloudinary with appropriate folder structure
+      const folder = `services/${type === "main" ? serviceTitle : `gallery/${serviceTitle}`}`;
+      const result = await uploadToCloudinary(buffer, folder);
       
       return NextResponse.json({
         success: true,
-        filePath: relativePath,
+        filePath: result.secure_url,
+        publicId: result.public_id,
         message: "File uploaded successfully",
       });
     }
@@ -206,7 +186,7 @@ export async function POST(request: NextRequest) {
   } catch (error: unknown) {
     console.error("Error in POST request:", error);
     return NextResponse.json(
-      {
+      { 
         success: false,
         message: "Failed to process request",
         error: error instanceof Error ? error.message : 'Unknown error',

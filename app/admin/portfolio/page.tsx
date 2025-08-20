@@ -52,6 +52,7 @@ import {
   Upload,
   ImageIcon,
   Edit2,
+  Loader2,
 } from "lucide-react";
 import "@/styles/quill.css";
 
@@ -99,26 +100,13 @@ export default function PortfolioPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [isFormSubmitted, setIsFormSubmitted] = useState(false);
+  const [deletingButtonId, setDeletingButtonId] = useState<string | null>(null);
   const scrollPositionRef = useRef<number>(0);
-
-  // Utility functions to prevent scroll jumping
-  const preventScrollJump = () => {
-    const scrollY = window.scrollY;
-    scrollPositionRef.current = scrollY;
-    document.body.style.position = 'fixed';
-    document.body.style.top = `-${scrollY}px`;
-    document.body.style.width = '100%';
-  };
-
-  const restoreScroll = () => {
-    const scrollY = scrollPositionRef.current;
-    document.body.style.position = '';
-    document.body.style.top = '';
-    document.body.style.width = '';
-    window.scrollTo({ top: scrollY, behavior: 'instant' });
-  };
+ 
+  
 
   // Quill configuration - only allow paragraph, bullet list, and numbered list
   const quillModules = {
@@ -504,6 +492,7 @@ export default function PortfolioPage() {
 
   const handleSave = async () => {
     setIsFormSubmitted(true);
+    setIsSaving(true);
 
     // Validate required fields
     if (
@@ -526,6 +515,7 @@ export default function PortfolioPage() {
         description: "Please fill in all required fields.",
         variant: "destructive",
       });
+      setIsSaving(false);
       return;
     }
 
@@ -680,6 +670,7 @@ export default function PortfolioPage() {
 
   const handleDelete = async (id: string) => {
     try {
+      setDeletingButtonId(id);
       const response = await fetch(`/api/admin/portfolio/${id}`, {
         method: "DELETE",
       });
@@ -713,6 +704,8 @@ export default function PortfolioPage() {
         description: "Failed to delete portfolio item",
         variant: "destructive",
       });
+    } finally {
+      setDeletingButtonId(null);
     }
   };
 
@@ -1993,10 +1986,20 @@ export default function PortfolioPage() {
               <div className="flex gap-4 pt-6 border-t">
                 <Button
                   onClick={handleSave}
-                  className="bg-admin-gradient text-white border-0"
+                  disabled={isSaving}
+                  className="bg-admin-gradient text-white border-0 disabled:opacity-50"
                 >
-                  <Save className="h-4 w-4 mr-2" />
-                  Save Portfolio Item
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4 mr-2" />
+                      Save Portfolio Item
+                    </>
+                  )}
                 </Button>
                 <Button variant="outline" onClick={handleCancel}>
                   <X className="h-4 w-4 mr-2" />
@@ -2214,9 +2217,19 @@ export default function PortfolioPage() {
                       size="sm"
                       variant="outline"
                       onClick={() => handleDeleteClick(item._id!)}
+                      disabled={deletingButtonId === item._id}
                     >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Delete
+                      {deletingButtonId === item._id ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600 mr-2"></div>
+                          Deleting...
+                        </>
+                      ) : (
+                        <>
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete
+                        </>
+                      )}
                     </Button>
                   </div>
                 </div>

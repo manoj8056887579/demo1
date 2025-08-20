@@ -1,29 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectDB from "@/config/models/connectDB";
 import Services from "@/config/utils/admin/services/servicesSchema";
-import { unlink, rmdir } from "fs/promises";
-import path from "path";
-import { existsSync } from "fs";
+import { uploadToCloudinary, deleteFromCloudinary } from "@/config/utils/cloudinary";
 
 // GET - Fetch single service by ID or title
 export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
+  request: NextRequest, 
+  context: { params: { id: string } }
 ) {
   try {
     await connectDB();
     
+    const { params } = context;
+    const id = params.id;
+    
     let service;
     
-    // Check if params.id is a MongoDB ObjectId (24 characters hex) or a title-based slug
-    const isObjectId = /^[0-9a-fA-F]{24}$/.test(params.id);
+    // Check if id is a MongoDB ObjectId (24 characters hex) or a title-based slug
+    const isObjectId = /^[0-9a-fA-F]{24}$/.test(id);
     
     if (isObjectId) {
       // Search by MongoDB _id
-      service = await Services.findById(params.id);
+      service = await Services.findById(id);
     } else {
       // Search by title (convert URL slug back to title for matching)
-      const titleFromSlug = params.id
+      const titleFromSlug = id
         .split('-')
         .map(word => word.charAt(0).toUpperCase() + word.slice(1))
         .join(' ');
@@ -69,20 +70,61 @@ export async function GET(
 // PUT - Update service by ID
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   try {
     await connectDB();
     
+    const { params } = context;
+    const id = params.id;
+    
     const body = await request.json();
+    const existingService = await Services.findById(id);
+
+    if (!existingService) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Service not found",
+        },
+        { status: 404 }
+      );
+    }
+
+    // Handle main image update
+    if (body.image && body.image !== existingService.image) {
+      try {
+        // Delete old main image from Cloudinary
+        const oldImageUrlParts = existingService.image.split('/');
+        const oldImagePublicId = oldImageUrlParts.slice(oldImageUrlParts.indexOf('services')).join('/').split('.')[0];
+        await deleteFromCloudinary(oldImagePublicId);
+      } catch (error) {
+        console.error("Error deleting old main image:", error);
+      }
+    }
+
+    // Handle gallery images update
+    if (body.gallery) {
+      // Find images that were removed
+      const oldGalleryUrls = existingService.gallery || [];
+      const removedImages = oldGalleryUrls.filter((oldUrl: string) => !body.gallery.includes(oldUrl));
+
+      // Delete removed images from Cloudinary
+      for (const removedUrl of removedImages) {
+        try {
+          const urlParts = removedUrl.split('/');
+          const publicId = urlParts.slice(urlParts.indexOf('services')).join('/').split('.')[0];
+          await deleteFromCloudinary(publicId);
+        } catch (error) {
+          console.error("Error deleting removed gallery image:", error);
+        }
+      }
+    }
     
     // Check if maximum featured services limit reached when trying to feature a service
     if (body.featured) {
-      // Get the current service to check if it's already featured
-      const currentService = await Services.findById(params.id);
-      
       // If the service is not currently featured and we're trying to feature it
-      if (currentService && !currentService.featured) {
+      if (!existingService.featured) {
         const existingFeaturedCount = await Services.countDocuments({ featured: true });
         if (existingFeaturedCount >= 3) {
           return NextResponse.json(
@@ -105,7 +147,7 @@ export async function PUT(
     }
     
     const updatedService = await Services.findByIdAndUpdate(
-      params.id,
+      id,
       body,
       { new: true, runValidators: true }
     );
@@ -141,13 +183,16 @@ export async function PUT(
 // DELETE - Delete service by ID
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   try {
     await connectDB();
     
+    const { params } = context;
+    const id = params.id;
+    
     // First get the service to access its data before deletion
-    const serviceToDelete = await Services.findById(params.id);
+    const serviceToDelete = await Services.findById(id);
     
     if (!serviceToDelete) {
       return NextResponse.json(
@@ -166,39 +211,37 @@ export async function DELETE(
       .replace(/(^-|-$)/g, "");
     
     // Delete the service from database
-    await Services.findByIdAndDelete(params.id);
+    await Services.findByIdAndDelete(id);
     
-    // Delete related image files and directories
+    // Delete related images from Cloudinary
     try {
-      const baseDir = path.join(process.cwd(), "public", "admin", "services", "main");
-      
-      // Delete main image directory
-      const mainImageDir = path.join(baseDir, serviceTitleSlug);
-      if (existsSync(mainImageDir)) {
-        // Delete all files in the main image directory
-        const fs = require('fs');
-        const files = fs.readdirSync(mainImageDir);
-        for (const file of files) {
-          await unlink(path.join(mainImageDir, file));
+      // Delete main image if it exists
+      if (serviceToDelete.image) {
+        try {
+          // Extract public_id from the URL
+          const urlParts = serviceToDelete.image.split('/');
+          const publicId = urlParts.slice(urlParts.indexOf('services')).join('/').split('.')[0];
+          await deleteFromCloudinary(publicId);
+        } catch (error) {
+          console.error("Error deleting main image:", error);
         }
-        // Delete the directory
-        await rmdir(mainImageDir);
       }
-      
-      // Delete gallery directory
-      const galleryDir = path.join(baseDir, "gallery", serviceTitleSlug);
-      if (existsSync(galleryDir)) {
-        // Delete all files in the gallery directory
-        const fs = require('fs');
-        const files = fs.readdirSync(galleryDir);
-        for (const file of files) {
-          await unlink(path.join(galleryDir, file));
+
+      // Delete gallery images if they exist
+      if (serviceToDelete.gallery && serviceToDelete.gallery.length > 0) {
+        for (const imageUrl of serviceToDelete.gallery) {
+          try {
+            // Extract public_id from the URL
+            const urlParts = imageUrl.split('/');
+            const publicId = urlParts.slice(urlParts.indexOf('services')).join('/').split('.')[0];
+            await deleteFromCloudinary(publicId);
+          } catch (error) {
+            console.error("Error deleting gallery image:", error);
+          }
         }
-        // Delete the directory
-        await rmdir(galleryDir);
       }
-      
-      console.log(`Deleted image directories for service: ${serviceToDelete.title}`);
+
+      console.log(`Deleted images from Cloudinary for service: ${serviceToDelete.title}`);
     } catch (fileError) {
       console.error("Error deleting image files:", fileError);
       // Don't fail the entire operation if file deletion fails

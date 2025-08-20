@@ -1,12 +1,10 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/config/models/connectDB";
 import Broucher from "@/config/utils/admin/broucher/broucherSchema";
-import { unlink, writeFile, mkdir } from "fs/promises";
-import path from "path";
-import { existsSync } from "fs";
+import { uploadToCloudinary, deleteFromCloudinary } from "@/config/utils/cloudinary";
 
 // GET all brochures
-export async function GET() {
+export async function GET() { 
   try {
     await connectDB();
     const brochures = await Broucher.find().sort({ uploadDate: -1 });
@@ -43,24 +41,13 @@ export async function POST(req: Request) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Create unique filename
-    const fileName = `${Date.now()}-${file.name}`;
-    const uploadDir = path.join(process.cwd(), "public", "broucher");
-    const filePath = path.join(uploadDir, fileName);
-
-    // Ensure upload directory exists
-    if (!existsSync(uploadDir)) {
-      await mkdir(uploadDir, { recursive: true });
-    }
-
-    // Save file to disk
-    await writeFile(filePath, buffer);
+    // Upload to Cloudinary
+    const result = await uploadToCloudinary(buffer, 'brouchers');
 
     // Save to database
     const newBroucher = new Broucher({
-      title: file.name.replace(/\.[^/.]+$/, ""), // Remove file extension for title
-      fileName,
-      filePath: `/broucher/${fileName}`,
+      fileName: file.name,
+      filePath: result.secure_url
     });
 
     await newBroucher.save();
@@ -95,15 +82,15 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: "Brochure not found" }, { status: 404 });
     }
 
-    // Delete file from disk
-    const filePath = path.join(process.cwd(), "public", broucher.filePath);
-    if (existsSync(filePath)) {
-      try {
-        await unlink(filePath);
-      } catch (fileError) {
-        console.error("Error deleting file:", fileError);
-        // Continue with database deletion even if file deletion fails
-      }
+    // Delete file from Cloudinary
+    try {
+      // Extract public_id from Cloudinary URL
+      const urlParts = broucher.filePath.split('/');
+      const publicId = `brouchers/${urlParts[urlParts.length - 1].split('.')[0]}`;
+      await deleteFromCloudinary(publicId);
+    } catch (fileError) {
+      console.error("Error deleting file from Cloudinary:", fileError);
+      // Continue with database deletion even if file deletion fails
     }
 
     // Delete from database
@@ -145,33 +132,23 @@ export async function PUT(req: Request) {
         );
       }
 
-      // Delete old file
-      const oldFilePath = path.join(process.cwd(), "public", broucher.filePath);
-      if (existsSync(oldFilePath)) {
-        try {
-          await unlink(oldFilePath);
-        } catch (fileError) {
-          console.error("Error deleting old file:", fileError);
-        }
+      // Delete old file from Cloudinary
+      try {
+        // Extract public_id from Cloudinary URL
+        const urlParts = broucher.filePath.split('/');
+        const publicId = `brouchers/${urlParts[urlParts.length - 1].split('.')[0]}`;
+        await deleteFromCloudinary(publicId);
+      } catch (fileError) {
+        console.error("Error deleting old file from Cloudinary:", fileError);
       }
 
-      // Save new file
+      // Upload new file to Cloudinary
       const bytes = await file.arrayBuffer();
       const buffer = Buffer.from(bytes);
-      const fileName = `${Date.now()}-${file.name}`;
-      const uploadDir = path.join(process.cwd(), "public", "broucher");
-      const filePath = path.join(uploadDir, fileName);
+      const result = await uploadToCloudinary(buffer, 'brouchers');
 
-      // Ensure upload directory exists
-      if (!existsSync(uploadDir)) {
-        await mkdir(uploadDir, { recursive: true });
-      }
-
-      await writeFile(filePath, buffer);
-
-      broucher.title = file.name.replace(/\.[^/.]+$/, ""); // Remove file extension for title
-      broucher.fileName = fileName;
-      broucher.filePath = `/broucher/${fileName}`;
+      broucher.fileName = file.name;
+      broucher.filePath = result.secure_url;
     }
 
     await broucher.save();

@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectDB from "@/config/models/connectDB";
 import Theme from "@/config/utils/admin/theme/themeSchema";
-import { writeFile, mkdir, unlink } from "fs/promises";
-import { existsSync } from "fs";
-import path from "path";
+import { uploadToCloudinary, deleteFromCloudinary } from "@/config/utils/cloudinary";
 
-// GET - Fetch theme settings
+// GET - Fetch theme settings 
 export async function GET() {
   try {
     await connectDB();
@@ -44,34 +42,27 @@ export async function GET() {
   }
 }
 
-// Helper function to delete old file
-async function deleteOldFile(filePath: string | null): Promise<void> {
-  if (!filePath) return;
+// Helper function to delete old file from Cloudinary
+async function deleteOldFile(cloudinaryUrl: string | null): Promise<void> {
+  if (!cloudinaryUrl) return;
   
   try {
-    // Convert URL path to file system path
-    const fileName = path.basename(filePath);
-    const fullPath = path.join(process.cwd(), 'public', 'admin', 'logo', fileName);
+    // Extract public_id from Cloudinary URL
+    const urlParts = cloudinaryUrl.split('/');
+    const publicId = `theme/${urlParts[urlParts.length - 1].split('.')[0]}`;
     
-    // Check if file exists and delete it
-    if (existsSync(fullPath)) {
-      await unlink(fullPath);
-      console.log(`✅ Deleted old file: ${fileName}`);
-    }
+    await deleteFromCloudinary(publicId);
+    console.log(`✅ Deleted file from Cloudinary: ${publicId}`);
   } catch (error) {
-    console.error(`❌ Error deleting old file ${filePath}:`, error);
+    console.error(`❌ Error deleting file from Cloudinary:`, error);
     // Don't throw error - file deletion failure shouldn't stop the update
   }
 }
 
-// Helper function to save base64 image to file
-async function saveImageToFile(base64Data: string, fileName: string, type: 'logo' | 'favicon'): Promise<string> {
+// Helper function to upload base64 image to Cloudinary
+async function uploadBase64Image(base64Data: string, type: 'logo' | 'favicon'): Promise<string> {
   try {
-    // Create directory if it doesn't exist
-    const uploadDir = path.join(process.cwd(), 'public', 'admin', 'logo');
-    await mkdir(uploadDir, { recursive: true });
-
-    // Extract base64 data and convert to buffer
+    // Extract base64 data
     const base64Image = base64Data.split(';base64,').pop();
     if (!base64Image) {
       throw new Error('Invalid base64 data');
@@ -79,20 +70,13 @@ async function saveImageToFile(base64Data: string, fileName: string, type: 'logo
 
     const imageBuffer = Buffer.from(base64Image, 'base64');
     
-    // Generate unique filename with timestamp
-    const timestamp = Date.now();
-    const extension = type === 'favicon' ? '.ico' : '.png';
-    const uniqueFileName = `${type}-${timestamp}${extension}`;
+    // Upload to Cloudinary
+    const result = await uploadToCloudinary(imageBuffer, 'theme');
     
-    // Save file
-    const filePath = path.join(uploadDir, uniqueFileName);
-    await writeFile(filePath, imageBuffer);
-    
-    // Return public URL path
-    return `/admin/logo/${uniqueFileName}`;
+    return result.secure_url;
   } catch (error) {
-    console.error(`Error saving ${type}:`, error);
-    throw new Error(`Failed to save ${type} file`);
+    console.error(`Error uploading ${type} to Cloudinary:`, error);
+    throw new Error(`Failed to upload ${type} file`);
   }
 }
 
@@ -141,20 +125,20 @@ export async function PUT(request: NextRequest) {
 
     // Handle logo upload if it's base64 data
     if (logo && logo.startsWith('data:image/')) {
-      // Delete old logo file if it exists
+      // Delete old logo from Cloudinary if it exists
       if (currentTheme?.logo) {
         await deleteOldFile(currentTheme.logo);
       }
-      logoPath = await saveImageToFile(logo, 'logo', 'logo');
+      logoPath = await uploadBase64Image(logo, 'logo');
     }
 
     // Handle favicon upload if it's base64 data
     if (favicon && favicon.startsWith('data:image/')) {
-      // Delete old favicon file if it exists
+      // Delete old favicon from Cloudinary if it exists
       if (currentTheme?.favicon) {
         await deleteOldFile(currentTheme.favicon);
       }
-      faviconPath = await saveImageToFile(favicon, 'favicon', 'favicon');
+      faviconPath = await uploadBase64Image(favicon, 'favicon');
     }
 
     // Find and update the theme settings
@@ -201,7 +185,7 @@ export async function POST() {
     // Get current theme data to clean up old files
     const currentTheme = await Theme.findOne({ id: "default" });
 
-    // Delete old logo and favicon files if they exist
+    // Delete old logo and favicon from Cloudinary if they exist
     if (currentTheme?.logo) {
       await deleteOldFile(currentTheme.logo);
     }
