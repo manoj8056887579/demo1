@@ -13,7 +13,10 @@ export const uploadToCloudinary = async (buffer: Buffer, folder: string) => {
         .upload_stream(
           {
             folder: folder,
-            resource_type: 'auto',
+            resource_type: 'raw',
+            upload_preset: 'ml_default',
+            use_filename: true,
+            unique_filename: true
           },
           (error, result) => {
             if (error) reject(error);

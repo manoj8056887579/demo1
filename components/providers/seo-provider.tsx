@@ -19,7 +19,15 @@ interface SEOContextType {
   refreshSEOData: () => Promise<void>
 }
 
-const SEOContext = createContext<SEOContextType | undefined>(undefined)
+const defaultContext: SEOContextType = {
+  seoData: [],
+  getSEOByPageId: () => null,
+  loading: true,
+  error: null,
+  refreshSEOData: async () => {}
+}
+
+const SEOContext = createContext<SEOContextType>(defaultContext)
 
 export function SEOProvider({ children }: { children: React.ReactNode }) {
   const [seoData, setSeoData] = useState<SEOData[]>([])
@@ -76,8 +84,5 @@ export function SEOProvider({ children }: { children: React.ReactNode }) {
 
 export function useSEO() {
   const context = useContext(SEOContext)
-  if (context === undefined) {
-    throw new Error('useSEO must be used within a SEOProvider')
-  }
   return context
 }

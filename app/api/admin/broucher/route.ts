@@ -47,7 +47,8 @@ export async function POST(req: Request) {
     // Save to database
     const newBroucher = new Broucher({
       fileName: file.name,
-      filePath: result.secure_url
+      filePath: result.secure_url,
+      publicId: result.public_id
     });
 
     await newBroucher.save();
@@ -149,6 +150,7 @@ export async function PUT(req: Request) {
 
       broucher.fileName = file.name;
       broucher.filePath = result.secure_url;
+      broucher.publicId = result.public_id;
     }
 
     await broucher.save();

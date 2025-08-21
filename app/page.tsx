@@ -2,7 +2,13 @@
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
 import CompleteHome from "@/components/Home/CompleteHome";
-import { HomeSeo } from "@/components/Home/HomeSeo";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: 'Filigree Solutions - Advanced CAD & CAE Services | Engineering Excellence',
+  description: 'Leading provider of CAD, CAE, structural analysis, and engineering simulation services across India. Expert solutions for automotive, telecom, and industrial sectors.',
+  keywords: 'CAD services, CAE analysis, structural analysis, 3D modeling, engineering simulation, FEA, automotive engineering, telecom analysis'
+};
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -89,7 +95,6 @@ export default async function HomePage() {
 
   return (
     <div className="min-h-screen">
-      <HomeSeo />
       <Navbar />
       <CompleteHome services={services} testimonials={testimonials} />
       <Footer />
