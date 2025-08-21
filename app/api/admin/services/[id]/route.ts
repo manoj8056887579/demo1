@@ -3,16 +3,44 @@ import connectDB from "@/config/models/connectDB";
 import Services from "@/config/utils/admin/services/servicesSchema";
 import { uploadToCloudinary, deleteFromCloudinary } from "@/config/utils/cloudinary";
 
+// Configure body size limit for this route
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '10mb', // Set maximum file size to 10MB
+      onError: (err: { code: string; message: string }) => {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+          return new Response(JSON.stringify({
+            success: false,
+            message: 'File size too large. Maximum allowed size is 10MB.',
+            error: 'FILE_TOO_LARGE'
+          }), { 
+            status: 413,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+        return new Response(JSON.stringify({
+          success: false,
+          message: 'An error occurred while processing the request.',
+          error: err.message
+        }), { 
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+    }
+  }
+};
+
 // GET - Fetch single service by ID or title
 export async function GET(
   request: NextRequest, 
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB();
     
-    const { params } = context;
-    const id = params.id;
+    const { id } = await context.params;
     
     let service;
     
@@ -70,13 +98,12 @@ export async function GET(
 // PUT - Update service by ID
 export async function PUT(
   request: NextRequest,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB();
     
-    const { params } = context;
-    const id = params.id;
+    const { id } = await context.params;
     
     const body = await request.json();
     const existingService = await Services.findById(id);
@@ -153,7 +180,7 @@ export async function PUT(
     );
     
     if (!updatedService) {
-      return NextResponse.json(
+      return NextResponse.json( 
         {
           success: false,
           message: "Service not found",
@@ -183,13 +210,12 @@ export async function PUT(
 // DELETE - Delete service by ID
 export async function DELETE(
   request: NextRequest,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB();
     
-    const { params } = context;
-    const id = params.id;
+    const { id } = await context.params;
     
     // First get the service to access its data before deletion
     const serviceToDelete = await Services.findById(id);

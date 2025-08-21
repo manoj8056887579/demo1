@@ -1612,7 +1612,7 @@ export default function ServicesPage() {
                           Delete
                         </>
                       )}
-                    </Button>
+                    </Button> 
                   </div>
                 </div>
 
