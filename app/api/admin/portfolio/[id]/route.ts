@@ -3,27 +3,58 @@ import connectDB from "@/config/models/connectDB";
 import Portfolio from "@/config/utils/admin/portfolio/PortfolioSchema";
 import { deleteFromCloudinary } from "@/config/utils/cloudinary";
 
+// Configure body size limit for this route
+// Configure body size limit for this route
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '10mb', // Set maximum file size to 10MB
+      onError: (err: { code: string; message: string }) => {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+          return new Response(JSON.stringify({
+            success: false,
+            message: 'File size too large. Maximum allowed size is 10MB.',
+            error: 'FILE_TOO_LARGE'
+          }), { 
+            status: 413,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+        return new Response(JSON.stringify({
+          success: false,
+          message: 'An error occurred while processing the request.',
+          error: err.message
+        }), { 
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+    }
+  }
+};
 // GET - Fetch single portfolio item by ID or title
 export async function GET( 
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB();
-
+    
+    const { id } = await context.params;
+    
     let portfolioItem;
 
-    // Check if params.id is a MongoDB ObjectId (24 characters hex) or a title-based slug
-    const isObjectId = /^[0-9a-fA-F]{24}$/.test(params.id);
+    // Check if id is a MongoDB ObjectId (24 characters hex) or a title-based slug
+    const isObjectId = /^[0-9a-fA-F]{24}$/.test(id);
 
     if (isObjectId) {
       // Search by MongoDB _id
-      portfolioItem = await Portfolio.findById(params.id);
+      portfolioItem = await Portfolio.findById(id);
     } else {
       // Search by title (convert URL slug back to title for matching)
-      const titleFromSlug = params.id
+      const titleFromSlug = id
         .split("-")
-        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
         .join(" ");
 
       // Try to find by exact title match or by slug-like title variations
@@ -35,7 +66,7 @@ export async function GET(
               $regex: new RegExp(titleFromSlug.replace(/\s+/g, ".*"), "i"),
             },
           },
-          { slug: params.id },
+          { slug: id },
         ],
       });
     }
@@ -71,13 +102,14 @@ export async function GET(
 // PUT - Update portfolio item by ID
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB();
 
+    const { id } = await context.params;
     const body = await request.json();
-    const existingPortfolio = await Portfolio.findById(params.id);
+    const existingPortfolio = await Portfolio.findById(id);
 
     if (!existingPortfolio) {
       return NextResponse.json(
@@ -128,7 +160,7 @@ export async function PUT(
     }
 
     const updatedPortfolioItem = await Portfolio.findByIdAndUpdate(
-      params.id,
+      id,
       body,
       { new: true, runValidators: true }
     );

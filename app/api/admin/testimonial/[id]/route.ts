@@ -6,12 +6,13 @@ import { uploadToCloudinary, deleteFromCloudinary } from "@/config/utils/cloudin
 // GET - Fetch single testimonial by ID
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) { 
   try {
     await connectDB();
     
-    const testimonial = await Testimonial.findById(params.id);
+    const { id } = await context.params;
+    const testimonial = await Testimonial.findById(id);
     
     if (!testimonial) {
       return NextResponse.json(
@@ -44,10 +45,12 @@ export async function GET(
 // PUT - Update testimonial by ID
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB();
+    
+    const { id } = await context.params;
     
     const contentType = request.headers.get("content-type");
     let body: any;
@@ -79,7 +82,7 @@ export async function PUT(
         avatarPath = result.secure_url;
       } else {
         // Keep existing avatar if no new file is uploaded
-        const existingTestimonial = await Testimonial.findById(params.id);
+        const existingTestimonial = await Testimonial.findById(id);
         avatarPath = existingTestimonial?.avatar || "";
       }
     } else {
@@ -127,7 +130,7 @@ export async function PUT(
     };
     
     const updatedTestimonial = await Testimonial.findByIdAndUpdate(
-      params.id,
+      id,
       updateData,
       { new: true, runValidators: true }
     );
@@ -163,13 +166,15 @@ export async function PUT(
 // DELETE - Delete testimonial by ID
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB();
     
+    const { id } = await context.params;
+    
     // First, find the testimonial to get the avatar path
-    const testimonialToDelete = await Testimonial.findById(params.id);
+    const testimonialToDelete = await Testimonial.findById(id);
     
     if (!testimonialToDelete) {
       return NextResponse.json(
@@ -182,7 +187,7 @@ export async function DELETE(
     }
     
     // Delete the testimonial from database
-    const deletedTestimonial = await Testimonial.findByIdAndDelete(params.id);
+    const deletedTestimonial = await Testimonial.findByIdAndDelete(id);
     
     // Delete the associated image from Cloudinary if it exists
     if (testimonialToDelete.avatar) {
