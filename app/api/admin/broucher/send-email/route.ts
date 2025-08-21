@@ -3,6 +3,8 @@ import connectDB from "@/config/models/connectDB";
 import EmailSMTP from "../../../../../config/utils/admin/smtp/emailSMTPSchema";
 import { createSMTPTransporter } from "@/config/models/connectSMTP";
 import Broucher from "@/config/utils/admin/broucher/broucherSchema";
+import { uploadToCloudinary, deleteFromCloudinary } from "@/config/utils/cloudinary";
+
 
 export async function POST(request: Request) {
   try {
@@ -42,7 +44,7 @@ export async function POST(request: Request) {
     const transporter = createSMTPTransporter(smtpConfig);
 
     // Process attachments with improved error handling and Cloudinary support
-    const attachments = [];
+    const attachments: { filename: string; content: Buffer; contentType: string }[] = [];
     
     for (const brochure of brochures) {
       try {
@@ -68,43 +70,22 @@ export async function POST(request: Request) {
         let response = null;
         let buffer = null;
         
-        // Strategy 1: Direct fetch with minimal headers
+        // Use our download API to fetch the file
         try {
-          response = await fetch(fetchUrl, {
+          response = await fetch(`${process.env.APP_URL}/api/admin/broucher/download?id=${brochure._id}`, {
             method: 'GET',
-            headers: {
-              'Accept': 'application/pdf,*/*',
-            },
           });
           
           if (response.ok) {
             const arrayBuffer = await response.arrayBuffer();
             buffer = Buffer.from(arrayBuffer);
+          } else {
+            console.log(`Failed to fetch ${brochure.fileName} using download API:`, response.status);
           }
-        } catch (fetchError) {
-          console.log(`Direct fetch failed for ${brochure.fileName}:`, fetchError.message);
-        }
-        
-        // Strategy 2: If direct fetch failed, try with different headers
-        if (!buffer || buffer.length === 0) {
-          try {
-            response = await fetch(brochure.filePath, {
-              method: 'GET',
-              headers: {
-                'User-Agent': 'Mozilla/5.0 (compatible; EmailBot/1.0)',
-                'Accept': '*/*',
-                'Accept-Encoding': 'identity',
-                'Cache-Control': 'no-cache',
-              },
-            });
-            
-            if (response.ok) {
-              const arrayBuffer = await response.arrayBuffer();
-              buffer = Buffer.from(arrayBuffer);
-            }
-          } catch (fetchError2) {
-            console.log(`Alternative fetch failed for ${brochure.fileName}:`, fetchError2.message);
-          }
+        } catch (error) {
+          console.log(`Download API fetch failed for ${brochure.fileName}:`, 
+            error instanceof Error ? error.message : 'Unknown error'
+          );
         }
         
         // Check if we successfully got the file
@@ -147,7 +128,7 @@ export async function POST(request: Request) {
               <span style="font-weight: 500;">${brochure.fileName}</span>
               ${isAttached 
                 ? '<span style="background: #10b981; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600;">ATTACHED</span>'
-                : `<a href="${brochure.filePath}" target="_blank" style="background: #3b82f6; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; text-decoration: none;">DOWNLOAD</a>`
+                : `<a href="${process.env.APP_URL}/api/admin/broucher/download?id=${brochure._id}" target="_blank" style="background: #3b82f6; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; text-decoration: none;">DOWNLOAD</a>`
               }
             </div>
           </td>

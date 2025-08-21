@@ -19,6 +19,7 @@ interface Brochure {
   _id: string;
   fileName: string;
   filePath: string;
+  publicId: string;
   uploadDate: string;
 }
 
@@ -333,21 +334,28 @@ export default function Broucher() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => {
-                        const link = document.createElement("a");
-                        link.href = brochure.filePath;
-                        link.download = brochure.fileName;
-                        link.style.display = "none";
-                        document.body.appendChild(link);
-
-                        link.click();
-
-                        // Remove link after click
-                        setTimeout(() => {
-                          document.body.removeChild(link);
-                        }, 1500);
+                      onClick={async () => {
+                        try {
+                          // Trigger download directly
+                          window.location.href = `/api/admin/broucher/download?id=${brochure._id}`;
+                          
+                          toast({
+                            title: "Success",
+                            description: "Download started"
+                          });
+                          
+                          toast({
+                            title: "Success",
+                            description: "Download started",
+                          });
+                        } catch (error: any) {
+                          toast({
+                            title: "Error",
+                            description: error.message || "Failed to download file",
+                            variant: "destructive",
+                          });
+                        }
                       }}
-                      className="text-blue-600 hover:text-blue-700"
                     >
                       <Download className="h-4 w-4" />
                     </Button>

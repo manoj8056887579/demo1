@@ -14,9 +14,46 @@ interface SEOMetaOptions {
 
 export function useSEOMeta({ pageId, fallback }: SEOMetaOptions) {
   const { getSEOByPageId, loading } = useSEO()
+
+  const updateMetaTags = (title: string, description: string, keywords: string) => {
+    // Update document title
+    document.title = title
+    
+    // Update meta tags
+    updateMetaTag('description', description)
+    updateMetaTag('keywords', keywords)
+    
+    // Update Open Graph tags
+    updateMetaTag('og:title', title, 'property')
+    updateMetaTag('og:description', description, 'property')
+    updateMetaTag('og:type', 'website', 'property')
+    
+    // Update Twitter Card tags
+    updateMetaTag('twitter:title', title)
+    updateMetaTag('twitter:description', description)
+    updateMetaTag('twitter:card', 'summary_large_image')
+  }
   
   useEffect(() => {
-    if (loading) return
+    // Set initial values
+    const initialTitle = fallback?.title || 'Filigree Solutions'
+    const initialDesc = fallback?.description || 'Leading provider of CAD, CAE, and engineering services'
+    const initialKeys = fallback?.keywords || 'CAD services, CAE analysis, engineering'
+    
+    // Always set fallback values first
+    updateMetaTags(initialTitle, initialDesc, initialKeys)
+    
+    // Then update with SEO data when available
+    if (!loading) {
+      const seoData = getSEOByPageId(pageId)
+      if (seoData) {
+        updateMetaTags(
+          seoData.title,
+          seoData.description,
+          seoData.keywords
+        )
+      }
+    }
 
     const seoData = getSEOByPageId(pageId)
     
