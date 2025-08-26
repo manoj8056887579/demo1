@@ -1,4 +1,4 @@
-import { v2 as cloudinary } from "cloudinary";
+import { v2 as cloudinary } from 'cloudinary';
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -13,9 +13,10 @@ export const uploadToCloudinary = async (buffer: Buffer, folder: string) => {
         .upload_stream(
           {
             folder: folder,
-            resource_type: "raw",
+            resource_type: 'raw',
+            upload_preset: 'ml_default',
             use_filename: true,
-            unique_filename: true,
+            unique_filename: true
           },
           (error, result) => {
             if (error) reject(error);
@@ -27,7 +28,7 @@ export const uploadToCloudinary = async (buffer: Buffer, folder: string) => {
 
     return result as any;
   } catch (error) {
-    console.error("Error uploading to Cloudinary:", error);
+    console.error('Error uploading to Cloudinary:', error);
     throw error;
   }
 };
@@ -36,7 +37,7 @@ export const deleteFromCloudinary = async (publicId: string) => {
   try {
     await cloudinary.uploader.destroy(publicId);
   } catch (error) {
-    console.error("Error deleting from Cloudinary:", error);
+    console.error('Error deleting from Cloudinary:', error);
     throw error;
   }
 };
