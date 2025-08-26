@@ -3,35 +3,6 @@ import connectDB from "@/config/models/connectDB";
 import Services from "@/config/utils/admin/services/servicesSchema";
 import { uploadToCloudinary, deleteFromCloudinary } from "@/config/utils/cloudinary";
 
-// Configure body size limit for this route
-export const config = {
-  api: {
-    bodyParser: {
-      sizeLimit: '10mb', // Set maximum file size to 10MB
-      onError: (err: { code: string; message: string }) => {
-        if (err.code === 'LIMIT_FILE_SIZE') {
-          return new Response(JSON.stringify({
-            success: false,
-            message: 'File size too large. Maximum allowed size is 10MB.',
-            error: 'FILE_TOO_LARGE'
-          }), { 
-            status: 413,
-            headers: { 'Content-Type': 'application/json' }
-          });
-        }
-        return new Response(JSON.stringify({
-          success: false,
-          message: 'An error occurred while processing the request.',
-          error: err.message
-        }), { 
-          status: 500,
-          headers: { 'Content-Type': 'application/json' }
-        });
-      }
-    }
-  }
-};
-
 // GET - Fetch single service by ID or title
 export async function GET(
   request: NextRequest, 
