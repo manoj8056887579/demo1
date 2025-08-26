@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { GoogleSignInButton } from '@/components/ui/google-sign-in-button'
 import { useRouter } from "next/navigation"
 import Link from "next/link"
@@ -24,6 +24,16 @@ export default function AdminLogin() {
     email: "",
     password: "",
   })
+
+  // Generate static positions for particles to avoid hydration mismatch
+  const particlePositions = useMemo(() => {
+    return Array.from({ length: 50 }, (_, i) => ({
+      left: (i * 37 + 23) % 100,
+      top: (i * 43 + 17) % 100,
+      duration: 3 + (i % 2),
+      delay: (i % 2),
+    }));
+  }, []);
 
   // Check if already logged in
   useEffect(() => {
@@ -151,22 +161,22 @@ export default function AdminLogin() {
 
         {/* Floating Particles */}
         <div className="absolute inset-0">
-          {Array.from({ length: 50 }).map((_, i) => (
+          {particlePositions.map((particle, i) => (
             <motion.div
               key={i}
               className="absolute w-1 h-1 bg-white/30 rounded-full"
               style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
+                left: `${particle.left}%`,
+                top: `${particle.top}%`,
               }}
               animate={{
                 y: [0, -30, 0],
                 opacity: [0.3, 0.8, 0.3],
               }}
               transition={{
-                duration: 3 + Math.random() * 2,
+                duration: particle.duration,
                 repeat: Number.POSITIVE_INFINITY,
-                delay: Math.random() * 2,
+                delay: particle.delay,
               }}
             />
           ))}

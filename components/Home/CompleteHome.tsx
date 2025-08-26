@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
+import { useMemo } from "react"
 
 import { ArrowRight, Users, Award, Target, Sparkles, Rocket, Clock, User } from "lucide-react"
 
@@ -61,6 +62,28 @@ interface CompleteHomeProps {
 
 export default function CompleteHome({ services, testimonials }: CompleteHomeProps) {
   const { openQuotationForm } = useQuotation()
+
+  // Generate static positions for particles to avoid hydration mismatch
+    const particlePositions = useMemo(() => {
+      return Array.from({ length: 25 }, (_, i) => ({
+        top: (i * 37 + 23) % 100, // Deterministic positioning
+        left: (i * 43 + 17) % 100,
+        boxShadow: 6 + (i % 10),
+        duration: 4 + (i % 4),
+        delay: (i % 5),
+      }));
+    }, []);
+  
+    const constellationPositions = useMemo(() => {
+      return Array.from({ length: 50 }, (_, i) => ({
+        cx: (i * 47 + 31) % 1000,
+        cy: (i * 53 + 19) % 800,
+        r: 0.5 + (i % 4) * 0.5,
+        duration: 3 + (i % 3),
+        delay: (i % 4),
+      }));
+    }, []);
+  
 
   // Use SEO data for home page
   useSEOMeta({
@@ -321,6 +344,7 @@ export default function CompleteHome({ services, testimonials }: CompleteHomePro
       </section>
 
       <section className="py-12 sm:py-16 md:py-20 bg-gradient-to-br from-gray-50 to-white relative">
+        
         <div className="container mx-auto px-3 sm:px-4 md:px-6">
           <motion.div
             className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 md:gap-6 lg:gap-8"
@@ -360,8 +384,162 @@ export default function CompleteHome({ services, testimonials }: CompleteHomePro
       </section>
 
       <section className="py-12 sm:py-16 md:py-20 lg:py-24 bg-white relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-purple-50/50"></div>
+          {/* Aurora Borealis Theme Background */}
+      <div className="absolute inset-0">
+        {/* Dark sky base */}
+        <div className="absolute inset-0 bg-admin-gradient"></div>
+        
+        {/* Aurora light waves */}
+        <motion.div
+          className="absolute inset-0 bg-gradient-to-r from-emerald-300/20 via-cyan-400/30 to-purple-400/20"
+          animate={{
+            opacity: [0.3, 0.8, 0.4, 0.9, 0.3],
+            background: [
+              "linear-gradient(to right, rgba(16, 185, 129, 0.2), rgba(34, 197, 94, 0.3), rgba(168, 85, 247, 0.2))",
+              "linear-gradient(to right, rgba(34, 197, 94, 0.3), rgba(59, 130, 246, 0.4), rgba(236, 72, 153, 0.2))",
+              "linear-gradient(to right, rgba(59, 130, 246, 0.2), rgba(168, 85, 247, 0.3), rgba(16, 185, 129, 0.3))",
+              "linear-gradient(to right, rgba(168, 85, 247, 0.3), rgba(236, 72, 153, 0.2), rgba(34, 197, 94, 0.4))",
+              "linear-gradient(to right, rgba(16, 185, 129, 0.2), rgba(34, 197, 94, 0.3), rgba(168, 85, 247, 0.2))",
+            ],
+          }}
+          transition={{
+            duration: 12,
+            repeat: Number.POSITIVE_INFINITY,
+            ease: "easeInOut",
+          }}
+        />
+        
+        <motion.div
+          className="absolute inset-0 bg-gradient-to-l from-pink-300/25 via-transparent to-green-300/25"
+          animate={{
+            opacity: [0.6, 0.2, 0.7, 0.3, 0.6],
+            background: [
+              "linear-gradient(to left, rgba(249, 168, 212, 0.25), transparent, rgba(134, 239, 172, 0.25))",
+              "linear-gradient(to left, rgba(196, 181, 253, 0.3), transparent, rgba(125, 211, 252, 0.25))",
+              "linear-gradient(to left, rgba(125, 211, 252, 0.25), transparent, rgba(249, 168, 212, 0.3))",
+              "linear-gradient(to left, rgba(134, 239, 172, 0.3), transparent, rgba(196, 181, 253, 0.25))",
+              "linear-gradient(to left, rgba(249, 168, 212, 0.25), transparent, rgba(134, 239, 172, 0.25))",
+            ],
+          }}
+          transition={{
+            duration: 10,
+            repeat: Number.POSITIVE_INFINITY,
+            ease: "easeInOut",
+            delay: 3,
+          }}
+        />
+        
+        {/* Shimmering particles */}
+        {particlePositions.map((particle, i) => (
+          <motion.div
+            key={i}
+            className="absolute w-1 h-1 bg-white rounded-full"
+            style={{
+              top: `${particle.top}%`,
+              left: `${particle.left}%`,
+              boxShadow: `0 0 ${particle.boxShadow}px rgba(255,255,255,0.8)`,
+            }}
+            animate={{
+              opacity: [0.2, 1, 0.2],
+              scale: [0.5, 1.5, 0.5],
+              y: [0, -30, 0],
+            }}
+            transition={{
+              duration: particle.duration,
+              repeat: Number.POSITIVE_INFINITY,
+              ease: "easeInOut",
+              delay: particle.delay,
+            }}
+          />
+        ))}
+        
+        {/* Floating aurora ribbons */}
+        <motion.div
+          className="absolute top-1/4 left-0 w-full h-32 bg-gradient-to-r from-transparent via-cyan-300/10 to-transparent blur-sm"
+          animate={{
+            x: ['-100%', '100%'],
+            opacity: [0, 0.6, 0],
+          }}
+          transition={{
+            duration: 15,
+            repeat: Number.POSITIVE_INFINITY,
+            ease: "easeInOut",
+            delay: 2,
+          }}
+        />
+        
+        <motion.div
+          className="absolute bottom-1/4 right-0 w-full h-24 bg-gradient-to-l from-transparent via-emerald-300/15 to-transparent blur-sm"
+          animate={{
+            x: ['100%', '-100%'],
+            opacity: [0, 0.8, 0],
+          }}
+          transition={{
+            duration: 18,
+            repeat: Number.POSITIVE_INFINITY,
+            ease: "easeInOut",
+            delay: 5,
+          }}
+        />
+        
+        {/* Constellation dots */}
+        <svg className="absolute inset-0 w-full h-full opacity-30" viewBox="0 0 1000 800">
+          {constellationPositions.map((star, i) => (
+            <motion.circle
+              key={i}
+              cx={star.cx}
+              cy={star.cy}
+              r={star.r}
+              fill="white"
+              initial={{ opacity: 0.3 }}
+              animate={{ opacity: [0.3, 1, 0.3] }}
+              transition={{
+                duration: star.duration,
+                repeat: Number.POSITIVE_INFINITY,
+                ease: "easeInOut",
+                delay: star.delay,
+              }}
+            />
+          ))}
+        </svg>
+        
+        {/* Glowing orbs */}
+        <motion.div
+          className="absolute top-20 right-20 w-40 h-40 bg-gradient-radial from-cyan-300/30 via-blue-400/20 to-transparent rounded-full blur-2xl"
+          animate={{
+            scale: [1, 1.3, 1],
+            opacity: [0.4, 0.8, 0.4],
+            x: [0, 20, 0],
+            y: [0, -30, 0],
+          }}
+          transition={{
+            duration: 8,
+            repeat: Number.POSITIVE_INFINITY,
+            ease: "easeInOut",
+          }}
+        />
+        
+        <motion.div
+          className="absolute bottom-32 left-16 w-32 h-32 bg-gradient-radial from-emerald-300/25 via-green-400/15 to-transparent rounded-full blur-2xl"
+          animate={{
+            scale: [1.2, 1, 1.2],
+            opacity: [0.3, 0.7, 0.3],
+            x: [0, -15, 0],
+            y: [0, 25, 0],
+          }}
+          transition={{
+            duration: 10,
+            repeat: Number.POSITIVE_INFINITY,
+            ease: "easeInOut",
+            delay: 2,
+          }}
+        />
+      </div>
+
+        
+        
         <div className="container mx-auto px-3 sm:px-4 md:px-6 relative">
+          
           <motion.div
             className="max-w-4xl mx-auto text-center mb-8 sm:mb-12 md:mb-16 lg:mb-20"
             variants={fadeInUp}
@@ -373,11 +551,11 @@ export default function CompleteHome({ services, testimonials }: CompleteHomePro
               <Award className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
               Since 2019
             </Badge>
-            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-gray-900 mb-4 sm:mb-6 md:mb-8">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-white mb-4 sm:mb-6 md:mb-8">
               Engineering Excellence
-              <span className="block bg-admin-gradient bg-clip-text text-transparent">Since 2019</span>
+              <span className="block bg-white bg-clip-text text-transparent">Since 2019</span>
             </h2>
-            <p className="text-base sm:text-lg md:text-xl text-gray-600 leading-relaxed px-2 sm:px-4">
+            <p className="text-base sm:text-lg md:text-xl text-white leading-relaxed px-2 sm:px-4">
               Filigree Solutions is a leading provider of advanced CAD and CAE services, specializing in precision
               engineering solutions that drive innovation across industries with cutting-edge technology and expert
               knowledge.
@@ -443,7 +621,7 @@ export default function CompleteHome({ services, testimonials }: CompleteHomePro
       <Services services={services} />
       <Testimonials testimonials={testimonials} />
 
-      <section className="py-12 sm:py-16 md:py-20 lg:py-24 bg-admin-gradient to-blue-600 relative overflow-hidden">
+      <section className="py-12 sm:py-16 md:py-20 lg:py-24  relative overflow-hidden">
         <div className="absolute inset-0">
           <motion.div
             className="absolute top-6 left-6 sm:top-10 sm:left-10 w-16 h-16 sm:w-24 sm:h-24 md:w-32 md:h-32 bg-white/10 rounded-full blur-xl"
@@ -463,13 +641,13 @@ export default function CompleteHome({ services, testimonials }: CompleteHomePro
               <Rocket className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
               Ready to Start?
             </Badge>
-            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold mb-4 sm:mb-6 md:mb-8 text-white">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold mb-4 sm:mb-6 md:mb-8 text-admin-primary">
               Transform Your Engineering
               <span className="block text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-pink-300">
                 Projects Today
               </span>
             </h2>
-            <p className="text-sm sm:text-base md:text-lg lg:text-xl mb-6 sm:mb-8 md:mb-10 text-white/90 max-w-3xl mx-auto leading-relaxed px-2 sm:px-4">
+            <p className="text-sm sm:text-base md:text-lg lg:text-xl mb-6 sm:mb-8 md:mb-10 text-admin-secondary max-w-3xl mx-auto leading-relaxed px-2 sm:px-4">
               Let's discuss how our expertise can help you achieve your engineering goals. Get in touch with our expert
               team and start your journey to excellence.
             </p>
@@ -478,7 +656,7 @@ export default function CompleteHome({ services, testimonials }: CompleteHomePro
                 <Button
                   onClick={openQuotationForm}
                   size="lg"
-                  className="w-full sm:w-auto bg-white text-admin-secondary hover:bg-gray-100 px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold transition-all duration-300 hover:shadow-lg hover:scale-105"
+                  className="w-full sm:w-auto bg-admin-primary text-white hover:bg-admin-gradient px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold transition-all duration-300 hover:shadow-lg hover:scale-105"
                 >
                   Get Free Consultation <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
                 </Button>
@@ -488,7 +666,7 @@ export default function CompleteHome({ services, testimonials }: CompleteHomePro
                   asChild
                   size="lg"
                   variant="outline"
-                  className="w-full sm:w-auto border-white/30 text-white hover:bg-white/10 px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold bg-transparent backdrop-blur-sm"
+                  className="w-full sm:w-auto border-white/30 bg-admin-secondary text-white hover:bg-admin-gradient px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold backdrop-blur-sm"
                 >
                   <Link href="/portfolio">View Our Work</Link>
                 </Button>
