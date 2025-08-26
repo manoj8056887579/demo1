@@ -214,7 +214,6 @@ export default function AdminDashboard() {
                   <div className="space-y-1">
                     <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
                     <p className="text-sm text-gray-600 font-medium">{stat.title}</p>
-                    <p className="text-xs text-gray-500">vs last month</p>
                   </div>
                 </CardContent>
               </Card>
