@@ -326,9 +326,9 @@ function NavbarContent() {
                 <div className="font-bold text-sm sm:text-lg lg:text-xl xl:text-2xl bg-admin-gradient bg-clip-text text-transparent">
                   Filigree
                 </div>
-                <div className="text-xs sm:text-xs lg:text-sm text-gray-600 font-medium">
+                {/* <div className="text-xs sm:text-xs lg:text-sm text-gray-600 font-medium">
                   Solutions
-                </div>
+                </div> */}
               </div>
             </Link>
 
@@ -575,7 +575,7 @@ function NavbarContent() {
                 <p className="text-white/80 text-sm mt-2">
                   {isEmailSent
                     ? "✅ Brochures sent successfully!"
-                    : `Enter your details to receive ${brochures.length} brochure${brochures.length !== 1 ? 's' : ''} via email`
+                    : `Enter your details to receive  brochure${brochures.length !== 1 ? 's' : ''} via email`
                   }
                 </p>
               </div>
@@ -658,7 +658,7 @@ function NavbarContent() {
                       <p className="flex items-center gap-2">
                         <FileText className="h-3 w-3" />
                         <span>
-                          We'll send you {brochures.length} high-quality PDF brochure{brochures.length !== 1 ? 's' : ''} 
+                          We'll send you  high-quality PDF brochure{brochures.length !== 1 ? 's' : ''} 
                           {brochures.length > 0 && ' directly to your email inbox.'}
                         </span>
                       </p>
@@ -693,7 +693,7 @@ function NavbarContent() {
                           <>
                             <Send className="h-4 w-4 mr-2" />
                             Send to Email
-                            {brochures.length > 0 && ` (${brochures.length})`}
+                            
                           </>
                         )}
                       </Button>
