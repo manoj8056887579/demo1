@@ -651,6 +651,8 @@ export default function PortfolioPage() {
         variant: "destructive",
       });
     }
+    setIsSaving(false);
+
   };
 
   const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
