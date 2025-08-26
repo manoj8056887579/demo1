@@ -173,13 +173,13 @@ adminSchema.statics.findByCredentials = async function (email, password) {
 // Static method to create initial admin
 adminSchema.statics.createInitialAdmin = async function () {
   try {
-    const existingAdmin = await this.findOne({ email: "manoj@mntfuture.com" })
+    const existingAdmin = await this.findOne({ email: "sathyabalaji11@gmail.com" })
 
     if (!existingAdmin) {
       const initialAdmin = new this({
         firstName: "Sathya Balaji",
         lastName: "Kannan",
-        email: "manoj@mntfuture.com",
+        email: "sathyabalaji11@gmail.com",
         password: "Admin@1233",
         phone: "+91 9158549166",
         location: "Tamil Nadu, India",
