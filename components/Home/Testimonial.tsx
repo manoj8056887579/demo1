@@ -307,13 +307,13 @@ export const Testimonials = ({ testimonials = [] }: TestimonialsProps) => {
           whileInView="animate"
           viewport={{ once: true }}
         >
-          <Badge className="mb-4 sm:mb-6 bg-gradient-to-r from-cyan-500 to-purple-600 text-white px-4 sm:px-6 py-1.5 sm:py-2 text-xs sm:text-sm backdrop-blur-sm">
+          <Badge className="mb-4 sm:mb-6 bg-admin-gradient text-white px-4 sm:px-6 py-1.5 sm:py-2 text-xs sm:text-sm backdrop-blur-sm">
             <Star className="h-3 w-3 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
             Testimonials
           </Badge>
           <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 sm:mb-6 md:mb-8 px-2">
             What Our Clients
-            <span className="block bg-gradient-to-r from-cyan-300 via-emerald-400 to-purple-400 bg-clip-text text-transparent">
+            <span className="block bg-white bg-clip-text text-transparent">
               Say About Us
             </span>
           </h2>

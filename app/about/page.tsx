@@ -172,15 +172,14 @@ export default function AboutPage() {
           >
             <Badge className="mb-3 sm:mb-4 bg-white/20 text-white border-white/30 backdrop-blur-sm px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm">
               <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
-              About Filigree Solutions
+              About Us
             </Badge>
             <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold mb-4 sm:mb-6 leading-tight">
               Engineering Excellence
-              <span className="block text-lg sm:text-xl md:text-2xl lg:text-3xl mt-1 sm:mt-2 font-normal">Since 2019</span>
+              {/* <span className="block text-lg sm:text-xl md:text-2xl lg:text-3xl mt-1 sm:mt-2 font-normal">Since 2019</span> */}
             </h1>
             <p className="text-xs sm:text-sm md:text-base lg:text-lg mb-6 sm:mb-8 text-white/90 max-w-3xl mx-auto leading-relaxed px-2 sm:px-0">
-              Discover the story behind our commitment to delivering world-class CAD and CAE solutions that drive
-              innovation and success across industries throughout India.
+             Filigree Solutions delivers top-tier CAD and CAE services, offering precision engineering expertise that empowers industries to innovate.
             </p>
           </motion.div>
         </div>
@@ -227,9 +226,9 @@ export default function AboutPage() {
               </Badge>
               <h2 className="text-3xl sm:text-3xl md:text-4xl xl:text-5xl font-bold text-gray-900 mb-6 sm:mb-8 leading-tight">
                 Engineering Excellence
-                <span className="block text-transparent bg-clip-text bg-admin-gradient text-2xl sm:text-3xl md:text-4xl lg:text-5xl">
+                {/* <span className="block text-transparent bg-clip-text bg-admin-gradient text-2xl sm:text-3xl md:text-4xl lg:text-5xl">
                   Since 2019
-                </span>
+                </span> */}
               </h2>
               <div className="space-y-4 sm:space-y-6">
                 <p className="text-sm sm:text-base md:text-lg lg:text-xl text-gray-600 leading-relaxed">
@@ -273,7 +272,7 @@ export default function AboutPage() {
                     <Building className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 text-white" />
                   </div>
                   <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-2 sm:mb-4">Filigree Solutions</h3>
-                  <p className="text-gray-600 text-sm sm:text-base md:text-lg mb-4 sm:mb-6">Engineering Excellence Since 2019</p>
+                  <p className="text-gray-600 text-sm sm:text-base md:text-lg mb-4 sm:mb-6">Engineering Excellence </p>
                   <div className="flex items-center justify-center space-x-2 sm:space-x-4">
                     <div className="flex">
                       {[...Array(5)].map((_, i) => (

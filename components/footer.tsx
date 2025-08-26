@@ -217,7 +217,7 @@ export default function Footer() {
                 <div className="font-bold text-xl sm:text-2xl bg-admin-gradient bg-clip-text text-transparent">
                   Filigree
                 </div>
-                <div className="text-sm sm:text-base font-medium">Solutions</div>
+                {/* <div className="text-sm sm:text-base font-medium">Solutions</div> */}
               </div>
             </Link>
 
