@@ -245,6 +245,7 @@ export default function ServicesPage() {
         description: "Please fill in all required fields.",
         variant: "destructive",
       });
+      setIsSaving(false);
       return;
     }
 
