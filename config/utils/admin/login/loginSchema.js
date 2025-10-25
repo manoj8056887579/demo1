@@ -177,8 +177,8 @@ adminSchema.statics.createInitialAdmin = async function () {
 
     if (!existingAdmin) {
       const initialAdmin = new this({
-        firstName: "Sathya Balaji",
-        lastName: "Kannan",
+        firstName: "Magizh NexGen Tachnologies",
+        lastName: "Information Technology",
         email: "manoj@mntfuture.com",
         password: "Admin@1233",
         phone: "+91 9158549166",
