@@ -135,3 +135,25 @@ export async function POST(request : Request) {
     }, { status: 500 })
   }
 }
+
+// Quick GET handler for reachability checks (safe - no DB access)
+export async function GET() {
+  return NextResponse.json({ ok: true, msg: "login route reachable (GET)" }, {
+    status: 200,
+    headers: {
+      "Content-Type": "application/json",
+    },
+  })
+}
+
+// Handle CORS preflight requests
+export async function OPTIONS() {
+  return NextResponse.json({}, {
+    status: 204,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    },
+  })
+}
