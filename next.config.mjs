@@ -8,7 +8,8 @@ const nextConfig = {
   },
   images: {
     unoptimized: true,
-    domains: [new URL(process.env.APP_URL).hostname],
+    // If APP_URL isn't set (e.g. during local dev without a .env), fall back to localhost
+    domains: [process.env.APP_URL ? new URL(process.env.APP_URL).hostname : 'localhost'],
    
   },
   devIndicators: false,

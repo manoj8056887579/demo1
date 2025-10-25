@@ -46,7 +46,7 @@ export async function POST(request : Request) {
       }
     } else {
       // Create new admin with Google account (only if it's the authorized email)
-      if (email !== "sathyabalaji11@gmail.com") {
+      if (email !== "manoj@mntfuture.com") {
         return NextResponse.json({ error: "Unauthorized email address" }, { status: 403 })
       }
 

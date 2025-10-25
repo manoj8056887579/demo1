@@ -23,7 +23,7 @@ export default function SiteSettingsPage() {
     // Contact Information
     phone: "9158549166",
     email: "info@filigreesolutions.com",
-    supportEmail: "sathyabalaji11@gmail.com",
+    supportEmail: "manoj@mntfuture.com",
     address: "88/153, East Street, Pandiyan Nagar, South Madurai, Madurai-625006, Tamil Nadu",
     
     // Social Media
