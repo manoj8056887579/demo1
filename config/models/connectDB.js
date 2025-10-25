@@ -22,7 +22,11 @@ const connectDB = async () => {
 
   } catch (error) {
     console.error('Error connecting to MongoDB:', error.message);
-    process.exit(1);
+    // Do not exit the process in serverless environments — throw instead so
+    // the caller/route can handle the error and respond with 5xx. Calling
+    // process.exit(1) can terminate the function instance and produce
+    // hard-to-debug failures (e.g., 405/500 responses). Rethrow here.
+    throw error
   }
 };
 
